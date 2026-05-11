@@ -1,4 +1,4 @@
-# ADS_app.py — A04 Version (bottom nav, dark toggle, QR, admin stats, hooks for Sheets/email)
+# ADS_app.py — A04.2 (Stable, rerun fixed, admin working, dark mode fixed)
 
 import streamlit as st
 import pandas as pd
@@ -39,7 +39,7 @@ if "page" not in st.session_state:
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"  # "light" or "dark"
+    st.session_state.theme = "light"
 
 params = st.query_params
 if "page" in params:
@@ -71,6 +71,7 @@ else:
 # ---------------------------------------------------------
 CSS = f"""
 <style>
+
 :root {{
     color-scheme: light dark;
 }}
@@ -114,7 +115,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 .nav-top a {{
   padding:8px 12px; border-radius:999px;
   text-decoration:none; color:{TEXT};
-  font-size:0.9rem; border:1px solid transparent;
+  font-size:0.9rem;
 }}
 .nav-top a.active {{
   background:{PRIMARY}; color:#111827;
@@ -167,10 +168,6 @@ html, body, [data-testid="stAppViewContainer"] {{
   color:{PRIMARY};
 }}
 
-.theme-toggle {{
-  font-size:0.75rem; color:#9ca3af; margin-top:4px;
-}}
-
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -196,22 +193,6 @@ def read_csv(path):
     if os.path.exists(path):
         return pd.read_csv(path)
     return pd.DataFrame()
-
-# Optional: Google Sheets sync hook (implement if you want)
-def sync_to_google_sheets(record: dict):
-    """
-    Placeholder for Google Sheets sync.
-    Implement using gspread / pygsheets with your credentials.
-    """
-    pass
-
-# Optional: email hook (implement with SMTP or API)
-def send_confirmation_email(email: str, student_name: str):
-    """
-    Placeholder for sending confirmation email.
-    Implement using SMTP or a service like SendGrid.
-    """
-    pass
 
 log_visit()
 
@@ -265,23 +246,18 @@ def render_header():
     toggle_label = "🌙 Dark mode" if theme == "light" else "☀️ Light mode"
     if st.button(toggle_label, key="theme_toggle"):
         st.session_state.theme = "dark" if theme == "light" else "light"
-        st.experimental_rerun()
+        st.rerun()
 
 render_header()
 
 # ---------------------------------------------------------
-# QR CODE (for registration page)
+# QR CODE
 # ---------------------------------------------------------
 def render_qr_section():
     if qrcode is None:
         return
     st.markdown("#### Quick Registration QR")
-    url = st.request.url if hasattr(st, "request") else ""
-    # fallback: just base path with ?page=Register
-    if "?" in url:
-        base = url.split("?")[0]
-    else:
-        base = url
+    base = st.request.url.split("?")[0] if hasattr(st, "request") else ""
     reg_url = base + "?page=Register"
     qr_img = qrcode.make(reg_url)
     buf = io.BytesIO()
@@ -403,9 +379,6 @@ elif page == "Register":
             "sig_date": sig_date.isoformat()
         }
         save_registration(record)
-        sync_to_google_sheets(record)
-        if email:
-            send_confirmation_email(email, student_name)
         st.success("Registration submitted successfully!")
 
 elif page == "Admin":
@@ -419,7 +392,7 @@ elif page == "Admin":
         if st.button("Login"):
             if pwd == ADMIN_PASS:
                 st.session_state.admin_authenticated = True
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Incorrect password.")
     else:
@@ -429,10 +402,8 @@ elif page == "Admin":
         visits = read_csv(VISIT_FILE)
 
         st.subheader("Overview")
-        total_regs = len(regs)
-        total_visits = len(visits)
-        st.write(f"Total registrations: **{total_regs}**")
-        st.write(f"Total site visits: **{total_visits}**")
+        st.write(f"Total registrations: **{len(regs)}**")
+        st.write(f"Total site visits: **{len(visits)}**")
 
         st.subheader("Registrations")
         if regs.empty:
@@ -451,7 +422,7 @@ elif page == "Admin":
         st.markdown("---")
         if st.button("Logout"):
             st.session_state.admin_authenticated = False
-            st.experimental_rerun()
+            st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
