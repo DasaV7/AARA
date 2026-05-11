@@ -1,4 +1,4 @@
-# ADS_app.py — A05 (iOS buttons, animations, WhatsApp, analytics, stable)
+# ADS_app.py — A05 (iOS buttons, animations, WhatsApp, stable)
 
 import streamlit as st
 import pandas as pd
@@ -293,7 +293,6 @@ def render_header():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # theme toggle
     toggle_label = "🌙 Dark mode" if theme == "light" else "☀️ Light mode"
     if st.button(toggle_label, key="theme_toggle"):
         st.session_state.theme = "dark" if theme == "light" else "light"
@@ -484,4 +483,33 @@ st.markdown(
     """
     <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">💬</a>
     """,
-   
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------
+# BOTTOM NAV
+# ---------------------------------------------------------
+home = "active" if page == "Home" else ""
+classes = "active" if page == "Classes" else ""
+reg = "active" if page == "Register" else ""
+admin = "active" if page == "Admin" else ""
+
+st.markdown(
+    f"""
+    <div class="bottom-nav">
+      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{admin}" href="/?page=Admin"><span>🔐</span>Admin</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------
+# FOOTER
+# ---------------------------------------------------------
+st.markdown(
+    '<div class="footer">© AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>',
+    unsafe_allow_html=True,
+)
