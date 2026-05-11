@@ -1,4 +1,5 @@
-# ADS_app.py  (A02 Version – Fixed & Verified)
+# ADS_app.py — A03 Version (Logo Fixed, Admin Improved, Streamlit 1.32+ Compatible)
+
 import streamlit as st
 import pandas as pd
 import os
@@ -33,7 +34,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 
-LOGO_PATH = "logo.png"   # place your logo file in repo root
+LOGO_PATH = "logo.png"   # must be in same folder as ADS_app.py
 
 # ---------------------------------------------------------
 # CSS (iOS Minimalist)
@@ -159,8 +160,11 @@ def render_header():
         st.markdown('<div class="header">', unsafe_allow_html=True)
         st.markdown('<div class="logo-wrap">', unsafe_allow_html=True)
         if os.path.exists(LOGO_PATH):
-            img = Image.open(LOGO_PATH)
-            st.image(img, width=72)
+            try:
+                img = Image.open(LOGO_PATH)
+                st.image(img, width=72)
+            except:
+                st.write("")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Brand
