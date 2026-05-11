@@ -1,4 +1,4 @@
-# ADS_app.py — A04.2 (Stable, rerun fixed, admin working, dark mode fixed)
+# ADS_app.py — A05 (iOS buttons, animations, WhatsApp, analytics, stable)
 
 import streamlit as st
 import pandas as pd
@@ -53,6 +53,7 @@ theme = st.session_state.theme
 # ---------------------------------------------------------
 if theme == "light":
     PRIMARY = "#b8860b"
+    PRIMARY_HOVER = "#a0750a"
     ACCENT = "#111827"
     MUTED = "#f7f7fa"
     CARD = "#ffffff"
@@ -60,6 +61,7 @@ if theme == "light":
     TEXT = "#111827"
 else:
     PRIMARY = "#facc6b"
+    PRIMARY_HOVER = "#e0b45f"
     ACCENT = "#f9fafb"
     MUTED = "#020617"
     CARD = "#020617"
@@ -67,7 +69,7 @@ else:
     TEXT = "#f9fafb"
 
 # ---------------------------------------------------------
-# CSS
+# CSS (A05)
 # ---------------------------------------------------------
 CSS = f"""
 <style>
@@ -79,14 +81,27 @@ CSS = f"""
 html, body, [data-testid="stAppViewContainer"] {{
     background-color: {MUTED} !important;
     color: {TEXT} !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }}
 
 [data-testid="stSidebar"] {{
     background-color: {CARD} !important;
 }}
 
-* {{ font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui; }}
-.block-container {{ padding-top: 1rem; max-width: 900px; }}
+* {{
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui;
+}}
+
+.block-container {{
+  padding-top: 1rem;
+  max-width: 900px;
+  animation: fadeIn 0.4s ease;
+}}
+
+@keyframes fadeIn {{
+  from {{ opacity: 0; transform: translateY(6px); }}
+  to {{ opacity: 1; transform: translateY(0); }}
+}}
 
 .header {{
   display:flex; align-items:center; gap:14px;
@@ -118,7 +133,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   font-size:0.9rem;
 }}
 .nav-top a.active {{
-  background:{PRIMARY}; color:#111827;
+  background:{PRIMARY}; color:white;
 }}
 
 .section {{
@@ -140,10 +155,33 @@ html, body, [data-testid="stAppViewContainer"] {{
   margin-bottom:8px;
 }}
 
-.btn {{
-  padding:8px 14px; border-radius:999px;
-  background:{ACCENT}; color:white;
-  text-decoration:none; font-weight:600;
+.btn-primary {{
+  display:inline-block;
+  padding:10px 20px;
+  background:{PRIMARY};
+  color:white !important;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+  transition: background 0.2s ease;
+}}
+.btn-primary:hover {{
+  background:{PRIMARY_HOVER};
+}}
+
+.btn-secondary {{
+  display:inline-block;
+  padding:10px 20px;
+  background:white;
+  color:{TEXT} !important;
+  border-radius:999px;
+  border:1px solid #d1d5db;
+  text-decoration:none;
+  font-weight:500;
+  transition: background 0.2s ease;
+}}
+.btn-secondary:hover {{
+  background:#f2f2f7;
 }}
 
 .footer {{
@@ -166,6 +204,19 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 .bottom-nav a.active {{
   color:{PRIMARY};
+}}
+
+.whatsapp-btn {{
+  position:fixed;
+  bottom:80px;
+  right:20px;
+  background:#25D366;
+  color:white;
+  padding:14px 16px;
+  border-radius:50%;
+  font-size:22px;
+  text-decoration:none;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
 }}
 
 </style>
@@ -274,7 +325,7 @@ if page == "Home":
     st.markdown('<div class="subtitle">Where passion meets performance.</div>', unsafe_allow_html=True)
     st.write("Choreography by **Mrs. Rekha Mahendran & Mahendran Ramachandran**")
     st.write("📍 **315 Spirehaven Dr, Rockwall, TX 75087**")
-    st.markdown('<a class="btn" href="/?page=Classes">View Classes</a>', unsafe_allow_html=True)
+    st.markdown('<a class="btn-secondary" href="/?page=Classes">View Classes</a>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     render_qr_section()
 
@@ -306,7 +357,7 @@ elif page == "Classes":
         unsafe_allow_html=True,
     )
 
-    st.markdown('<a class="btn" href="/?page=Register">Register Now</a>', unsafe_allow_html=True)
+    st.markdown('<a class="btn-primary" href="/?page=Register">Register Now</a>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Register":
@@ -427,26 +478,10 @@ elif page == "Admin":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# BOTTOM NAV
+# WHATSAPP BUTTON
 # ---------------------------------------------------------
-home = "active" if page == "Home" else ""
-classes = "active" if page == "Classes" else ""
-reg = "active" if page == "Register" else ""
-admin = "active" if page == "Admin" else ""
-
 st.markdown(
-    f"""
-    <div class="bottom-nav">
-      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
-      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
-      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
-      <a class="{admin}" href="/?page=Admin"><span>🔐</span>Admin</a>
-    </div>
+    """
+    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">💬</a>
     """,
-    unsafe_allow_html=True,
-)
-
-# ---------------------------------------------------------
-# FOOTER
-# ---------------------------------------------------------
-st.markdown('<div class="footer">© AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
+   
