@@ -604,7 +604,7 @@ elif page == "Admin":
 # ---------------------------------------------------------
 st.markdown(
     """
-    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">💬</a>
+    <a class="whatsapp-btn" href="https://wa.me/+16318367972" target="_blank">💬</a>
     """,
     unsafe_allow_html=True,
 )
