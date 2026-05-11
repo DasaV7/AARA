@@ -1,10 +1,16 @@
-# ADS_app.py — A03 Version (Logo Fixed, Admin Improved, Streamlit 1.32+ Compatible)
+# ADS_app.py — A04 Version (bottom nav, dark toggle, QR, admin stats, hooks for Sheets/email)
 
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, date
 from PIL import Image
+import io
+
+try:
+    import qrcode
+except ImportError:
+    qrcode = None
 
 # ---------------------------------------------------------
 # PAGE CONFIG
@@ -17,39 +23,75 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# THEME COLORS
-# ---------------------------------------------------------
-PRIMARY = "#b8860b"      # gold
-ACCENT = "#111827"       # charcoal
-MUTED = "#f7f7fa"        # soft background
-CARD = "#ffffff"
-BORDER = "#e6e6e8"
-
-# ---------------------------------------------------------
-# FILE PATHS
+# DATA PATHS
 # ---------------------------------------------------------
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
-
 REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
-
-LOGO_PATH = "logo.png"   # must be in same folder as ADS_app.py
+LOGO_PATH = "logo.png"
 
 # ---------------------------------------------------------
-# CSS (iOS Minimalist)
+# SESSION STATE
+# ---------------------------------------------------------
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+if "admin_authenticated" not in st.session_state:
+    st.session_state.admin_authenticated = False
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"  # "light" or "dark"
+
+params = st.query_params
+if "page" in params:
+    st.session_state.page = params["page"]
+
+page = st.session_state.page
+theme = st.session_state.theme
+
+# ---------------------------------------------------------
+# THEME COLORS
+# ---------------------------------------------------------
+if theme == "light":
+    PRIMARY = "#b8860b"
+    ACCENT = "#111827"
+    MUTED = "#f7f7fa"
+    CARD = "#ffffff"
+    BORDER = "#e6e6e8"
+    TEXT = "#111827"
+else:
+    PRIMARY = "#facc6b"
+    ACCENT = "#f9fafb"
+    MUTED = "#020617"
+    CARD = "#020617"
+    BORDER = "#1f2937"
+    TEXT = "#f9fafb"
+
+# ---------------------------------------------------------
+# CSS
 # ---------------------------------------------------------
 CSS = f"""
 <style>
+:root {{
+    color-scheme: light dark;
+}}
+
+html, body, [data-testid="stAppViewContainer"] {{
+    background-color: {MUTED} !important;
+    color: {TEXT} !important;
+}}
+
+[data-testid="stSidebar"] {{
+    background-color: {CARD} !important;
+}}
+
 * {{ font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui; }}
-html, body {{ background: {MUTED}; }}
 .block-container {{ padding-top: 1rem; max-width: 900px; }}
 
 .header {{
   display:flex; align-items:center; gap:14px;
-  padding:10px 14px; background:white;
+  padding:10px 14px; background:{CARD};
   border-radius:14px; border:1px solid {BORDER};
-  box-shadow:0 6px 18px rgba(17,24,39,0.04);
+  box-shadow:0 6px 18px rgba(17,24,39,0.12);
   margin-bottom:14px;
 }}
 
@@ -60,22 +102,22 @@ html, body {{ background: {MUTED}; }}
 }}
 
 .brand-title {{
-  font-weight:700; color:{ACCENT}; font-size:1.1rem;
+  font-weight:700; color:{TEXT}; font-size:1.1rem;
 }}
 .brand-sub {{
-  font-size:0.8rem; color:#6b7280;
+  font-size:0.8rem; color:#9ca3af;
 }}
 
-.nav {{
+.nav-top {{
   margin-left:auto; display:flex; gap:8px;
 }}
-.nav a {{
+.nav-top a {{
   padding:8px 12px; border-radius:999px;
-  text-decoration:none; color:{ACCENT};
-  font-size:0.9rem;
+  text-decoration:none; color:{TEXT};
+  font-size:0.9rem; border:1px solid transparent;
 }}
-.nav a.active {{
-  background:{PRIMARY}; color:white;
+.nav-top a.active {{
+  background:{PRIMARY}; color:#111827;
 }}
 
 .section {{
@@ -85,15 +127,15 @@ html, body {{ background: {MUTED}; }}
 }}
 
 .title {{
-  font-size:1.25rem; font-weight:700; color:{ACCENT};
+  font-size:1.25rem; font-weight:700; color:{TEXT};
 }}
 .subtitle {{
-  font-size:0.9rem; color:#6b7280; margin-bottom:10px;
+  font-size:0.9rem; color:#9ca3af; margin-bottom:10px;
 }}
 
 .class-card {{
   padding:10px; border-radius:10px;
-  background:#fbfbfb; border:1px solid {BORDER};
+  background:rgba(15,23,42,0.03); border:1px solid {BORDER};
   margin-bottom:8px;
 }}
 
@@ -105,8 +147,30 @@ html, body {{ background: {MUTED}; }}
 
 .footer {{
   text-align:center; color:#9ca3af;
-  font-size:0.8rem; margin-top:20px;
+  font-size:0.8rem; margin-top:40px; margin-bottom:60px;
 }}
+
+.bottom-nav {{
+  position:fixed; bottom:0; left:0; right:0;
+  background:{CARD}; border-top:1px solid {BORDER};
+  display:flex; justify-content:space-around;
+  padding:8px 0; z-index:999;
+}}
+.bottom-nav a {{
+  text-decoration:none; font-size:0.8rem;
+  color:{TEXT}; text-align:center;
+}}
+.bottom-nav a span {{
+  display:block; font-size:1.1rem;
+}}
+.bottom-nav a.active {{
+  color:{PRIMARY};
+}}
+
+.theme-toggle {{
+  font-size:0.75rem; color:#9ca3af; margin-top:4px;
+}}
+
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -133,21 +197,23 @@ def read_csv(path):
         return pd.read_csv(path)
     return pd.DataFrame()
 
+# Optional: Google Sheets sync hook (implement if you want)
+def sync_to_google_sheets(record: dict):
+    """
+    Placeholder for Google Sheets sync.
+    Implement using gspread / pygsheets with your credentials.
+    """
+    pass
+
+# Optional: email hook (implement with SMTP or API)
+def send_confirmation_email(email: str, student_name: str):
+    """
+    Placeholder for sending confirmation email.
+    Implement using SMTP or a service like SendGrid.
+    """
+    pass
+
 log_visit()
-
-# ---------------------------------------------------------
-# NAVIGATION STATE
-# ---------------------------------------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "Home"
-if "admin_authenticated" not in st.session_state:
-    st.session_state.admin_authenticated = False
-
-params = st.query_params
-if "page" in params:
-    st.session_state.page = params["page"]
-
-page = st.session_state.page
 
 # ---------------------------------------------------------
 # HEADER
@@ -155,7 +221,6 @@ page = st.session_state.page
 def render_header():
     cols = st.columns([0.15, 0.65, 0.2])
 
-    # Logo
     with cols[0]:
         st.markdown('<div class="header">', unsafe_allow_html=True)
         st.markdown('<div class="logo-wrap">', unsafe_allow_html=True)
@@ -167,7 +232,6 @@ def render_header():
                 st.write("")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Brand
     with cols[1]:
         st.markdown(
             f"""
@@ -177,7 +241,6 @@ def render_header():
             unsafe_allow_html=True,
         )
 
-    # Navigation
     with cols[2]:
         home = "active" if page == "Home" else ""
         classes = "active" if page == "Classes" else ""
@@ -186,7 +249,7 @@ def render_header():
 
         st.markdown(
             f"""
-            <div class="nav">
+            <div class="nav-top">
               <a class="{home}" href="/?page=Home">Home</a>
               <a class="{classes}" href="/?page=Classes">Classes</a>
               <a class="{reg}" href="/?page=Register">Register</a>
@@ -198,10 +261,36 @@ def render_header():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # theme toggle
+    toggle_label = "🌙 Dark mode" if theme == "light" else "☀️ Light mode"
+    if st.button(toggle_label, key="theme_toggle"):
+        st.session_state.theme = "dark" if theme == "light" else "light"
+        st.experimental_rerun()
+
 render_header()
 
 # ---------------------------------------------------------
-# HOME PAGE
+# QR CODE (for registration page)
+# ---------------------------------------------------------
+def render_qr_section():
+    if qrcode is None:
+        return
+    st.markdown("#### Quick Registration QR")
+    url = st.request.url if hasattr(st, "request") else ""
+    # fallback: just base path with ?page=Register
+    if "?" in url:
+        base = url.split("?")[0]
+    else:
+        base = url
+    reg_url = base + "?page=Register"
+    qr_img = qrcode.make(reg_url)
+    buf = io.BytesIO()
+    qr_img.save(buf, format="PNG")
+    buf.seek(0)
+    st.image(buf, caption="Scan to open registration page", width=140)
+
+# ---------------------------------------------------------
+# PAGES
 # ---------------------------------------------------------
 if page == "Home":
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -211,24 +300,39 @@ if page == "Home":
     st.write("📍 **315 Spirehaven Dr, Rockwall, TX 75087**")
     st.markdown('<a class="btn" href="/?page=Classes">View Classes</a>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    render_qr_section()
 
-# ---------------------------------------------------------
-# CLASSES PAGE
-# ---------------------------------------------------------
 elif page == "Classes":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Programs & Fees</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="class-card"><b>Tiny Stars (Ages 5–8)</b><br>Wed & Fri · 6:30–7:30 PM<br>4 classes: $60 · 8 classes: $100</div>', unsafe_allow_html=True)
-    st.markdown('<div class="class-card"><b>Shining Stars (Ages 9+)</b><br>Tue · 7–8 PM<br>4 classes: $60 · 8 classes: $100</div>', unsafe_allow_html=True)
-    st.markdown('<div class="class-card"><b>Dream Chasers (Ladies 18+)</b><br>Thu 6:30–7:30 PM · Sat 10:30–11:30 AM<br>4 classes: $50 · 8 classes: $80</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="class-card"><b>Tiny Stars (Ages 5–8)</b><br>'
+        'Beginner / Intermediate<br>'
+        'Wed & Fri · 6:30–7:30 PM<br>'
+        '4 classes: $60 · 8 classes: $100</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="class-card"><b>Shining Stars (Ages 9+)</b><br>'
+        'Beginner / Intermediate<br>'
+        'Tue · 7–8 PM<br>'
+        '4 classes: $60 · 8 classes: $100</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="class-card"><b>Dream Chasers (Ladies 18+)</b><br>'
+        'Beginner / Intermediate<br>'
+        'Thu 6:30–7:30 PM · Sat 10:30–11:30 AM<br>'
+        '4 classes: $50 · 8 classes: $80</div>',
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<a class="btn" href="/?page=Register">Register Now</a>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# REGISTRATION PAGE
-# ---------------------------------------------------------
 elif page == "Register":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
@@ -299,11 +403,11 @@ elif page == "Register":
             "sig_date": sig_date.isoformat()
         }
         save_registration(record)
+        sync_to_google_sheets(record)
+        if email:
+            send_confirmation_email(email, student_name)
         st.success("Registration submitted successfully!")
 
-# ---------------------------------------------------------
-# ADMIN PAGE (PASSWORD PROTECTED)
-# ---------------------------------------------------------
 elif page == "Admin":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Admin Dashboard</div>', unsafe_allow_html=True)
@@ -321,8 +425,16 @@ elif page == "Admin":
     else:
         st.success("Admin authenticated.")
 
-        st.subheader("Registrations")
         regs = read_csv(REG_FILE)
+        visits = read_csv(VISIT_FILE)
+
+        st.subheader("Overview")
+        total_regs = len(regs)
+        total_visits = len(visits)
+        st.write(f"Total registrations: **{total_regs}**")
+        st.write(f"Total site visits: **{total_visits}**")
+
+        st.subheader("Registrations")
         if regs.empty:
             st.info("No registrations yet.")
         else:
@@ -330,10 +442,11 @@ elif page == "Admin":
             st.download_button("Download Registrations CSV", regs.to_csv(index=False), "registrations.csv")
 
         st.subheader("Site Visits")
-        visits = read_csv(VISIT_FILE)
-        st.write(f"Total visits: **{len(visits)}**")
-        st.dataframe(visits)
-        st.download_button("Download Visits CSV", visits.to_csv(index=False), "site_visits.csv")
+        if visits.empty:
+            st.info("No visits yet.")
+        else:
+            st.dataframe(visits)
+            st.download_button("Download Visits CSV", visits.to_csv(index=False), "site_visits.csv")
 
         st.markdown("---")
         if st.button("Logout"):
@@ -341,6 +454,26 @@ elif page == "Admin":
             st.experimental_rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# BOTTOM NAV
+# ---------------------------------------------------------
+home = "active" if page == "Home" else ""
+classes = "active" if page == "Classes" else ""
+reg = "active" if page == "Register" else ""
+admin = "active" if page == "Admin" else ""
+
+st.markdown(
+    f"""
+    <div class="bottom-nav">
+      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{admin}" href="/?page=Admin"><span>🔐</span>Admin</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------------
 # FOOTER
