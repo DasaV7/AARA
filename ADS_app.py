@@ -3,6 +3,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import json
 from datetime import datetime, date
 from PIL import Image
 import io
@@ -69,7 +70,7 @@ else:
     TEXT = "#f9fafb"
 
 # ---------------------------------------------------------
-# CSS (A05.2)
+# CSS (A05.2) — includes required label, error styles, shake
 # ---------------------------------------------------------
 CSS = f"""
 <style>
@@ -194,7 +195,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 .error-field textarea,
 .error-field select {{
     border-color: #e11d48 !important;
-    box-shadow: 0 0 0 1px rgba(225,29,72,0.4);
+    box-shadow: 0 0 0 1px rgba(225,29,72,0.12);
 }}
 
 @keyframes shake {{
@@ -205,7 +206,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .shake {{
-  animation: shake 0.3s ease-in-out;
+  animation: shake 0.35s ease-in-out;
 }}
 
 .footer {{
@@ -315,12 +316,13 @@ def render_header():
             unsafe_allow_html=True,
         )
 
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # theme toggle
     toggle_label = "🌙 Dark mode" if theme == "light" else "☀️ Light mode"
     if st.button(toggle_label, key="theme_toggle"):
         st.session_state.theme = "dark" if theme == "light" else "light"
         st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 render_header()
 
@@ -340,7 +342,7 @@ def render_qr_section():
     st.image(buf, caption="Scan to open registration page", width=140)
 
 # ---------------------------------------------------------
-# HOME PAGE
+# PAGES
 # ---------------------------------------------------------
 if page == "Home":
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -352,9 +354,6 @@ if page == "Home":
     st.markdown('</div>', unsafe_allow_html=True)
     render_qr_section()
 
-# ---------------------------------------------------------
-# CLASSES PAGE
-# ---------------------------------------------------------
 elif page == "Classes":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Programs & Fees</div>', unsafe_allow_html=True)
@@ -386,23 +385,25 @@ elif page == "Classes":
     st.markdown('<a class="btn-primary" href="/?page=Register">Register Now</a>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# REGISTRATION PAGE (A05.2 Enhanced Validation)
-# ---------------------------------------------------------
 elif page == "Register":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
 
-    error_fields = set()
+    # We'll collect placeholders for required text inputs so JS can mark them on error
+    required_placeholders = {
+        "student_name": "__req_student_name",
+        "dob": "__req_dob",
+        "pref_time": "__req_pref_time",
+        "signature": "__req_signature"
+    }
 
     with st.form("reg_form", clear_on_submit=False):
-
         st.subheader("Student Info")
-
-        student_name = st.text_input("Student Name", key="student_name")
+        # Required text inputs include a unique placeholder token for JS targeting
+        student_name = st.text_input("Student Name", key="student_name", placeholder=required_placeholders["student_name"])
         st.markdown('<label class="required-label">Student Name</label>', unsafe_allow_html=True)
 
-        dob = st.text_input("Date of Birth (Age)", key="dob", placeholder="e.g., Jan 2015 (9 yrs)")
+        dob = st.text_input("Date of Birth (Age)", key="dob", placeholder=required_placeholders["dob"])
         st.markdown('<label class="required-label">Date of Birth (Age)</label>', unsafe_allow_html=True)
 
         gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender")
@@ -417,7 +418,6 @@ elif page == "Register":
         address = st.text_area("Address", key="address")
 
         st.subheader("Class Details")
-
         st.markdown('<label class="required-label">Enrollment Type</label>', unsafe_allow_html=True)
         enrollment = st.selectbox(
             "Enrollment Type",
@@ -438,7 +438,7 @@ elif page == "Register":
         level = st.selectbox("Level", ["", "Beginner", "Intermediate", "Advanced"], key="level")
 
         st.markdown('<label class="required-label">Preferred Days/Time</label>', unsafe_allow_html=True)
-        pref_time = st.text_input("Preferred Days/Time", key="pref_time")
+        pref_time = st.text_input("Preferred Days/Time", key="pref_time", placeholder=required_placeholders["pref_time"])
 
         experience = st.text_area("Previous Experience", key="experience")
 
@@ -452,11 +452,11 @@ elif page == "Register":
 
         st.subheader("Media Consent")
         st.markdown('<label class="required-label">Media Consent</label>', unsafe_allow_html=True)
-        consent = st.radio("Allow photo/video for promotions?", ["Yes", "No"], key="consent")
+        consent = st.radio("Allow photo/video for promotions?", ["", "Yes", "No"], key="consent")
 
         st.subheader("Parent Consent")
         st.markdown('<label class="required-label">Parent/Guardian Signature</label>', unsafe_allow_html=True)
-        signature = st.text_input("Parent/Guardian Signature", key="signature")
+        signature = st.text_input("Parent/Guardian Signature", key="signature", placeholder=required_placeholders["signature"])
 
         st.markdown('<label class="required-label">Date</label>', unsafe_allow_html=True)
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
@@ -465,47 +465,174 @@ elif page == "Register":
 
     if submitted:
         missing = []
+        # We'll also collect which placeholder tokens to mark in JS
+        missing_placeholders = []
 
-        # Required fields
-        if not student_name.strip():
+        # Required fields validation
+        if not student_name or not student_name.strip():
             missing.append("Student Name")
-            error_fields.add("student_name")
-        if not dob.strip():
+            missing_placeholders.append(required_placeholders["student_name"])
+        if not dob or not dob.strip():
             missing.append("Date of Birth / Age")
-            error_fields.add("dob")
-        if not gender.strip():
+            missing_placeholders.append(required_placeholders["dob"])
+        if not gender or not gender.strip():
             missing.append("Gender")
-            error_fields.add("gender")
-        if not enrollment.strip():
+        if not enrollment or not enrollment.strip():
             missing.append("Enrollment Type")
-            error_fields.add("enroll")
         if not mode:
             missing.append("Mode")
-            error_fields.add("mode")
-        if not level.strip():
+        if not level or not level.strip():
             missing.append("Level")
-            error_fields.add("level")
-        if not pref_time.strip():
+        if not pref_time or not pref_time.strip():
             missing.append("Preferred Days/Time")
-            error_fields.add("pref_time")
-        if not consent:
+            missing_placeholders.append(required_placeholders["pref_time"])
+        if not consent or not consent.strip():
             missing.append("Media Consent")
-            error_fields.add("consent")
-        if not signature.strip():
+        if not signature or not signature.strip():
             missing.append("Parent/Guardian Signature")
-            error_fields.add("signature")
+            missing_placeholders.append(required_placeholders["signature"])
         if not sig_date:
             missing.append("Date")
-            error_fields.add("sig_date")
 
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
 
-            # Shake animation
-            st.markdown(
-                """
-                <script>
-                const sections = window.parent.document.querySelectorAll('.section');
-                if (sections.length > 0) {
-                    const last = sections[sections.length - 1];
-                    last.class
+            # Add shake animation and mark text inputs with red border using JS
+            js = f"""
+            <script>
+            (function() {{
+                try {{
+                    const missing = {json.dumps(missing_placeholders)};
+                    missing.forEach(p => {{
+                        // find inputs or textareas with the placeholder token
+                        const el = document.querySelector('[placeholder="'+p+'"]');
+                        if (el) {{
+                            el.style.borderColor = '#e11d48';
+                            el.style.boxShadow = '0 0 0 1px rgba(225,29,72,0.12)';
+                        }}
+                    }});
+                    // add shake to the last .section element
+                    const sections = window.parent.document.querySelectorAll('.section');
+                    if (sections.length > 0) {{
+                        const last = sections[sections.length - 1];
+                        last.classList.add('shake');
+                        setTimeout(() => last.classList.remove('shake'), 400);
+                    }}
+                }} catch(e) {{
+                    console.log('validation script error', e);
+                }}
+            }})();
+            </script>
+            """
+            st.markdown(js, unsafe_allow_html=True)
+        else:
+            record = {
+                "timestamp": datetime.now().isoformat(),
+                "student_name": student_name,
+                "dob": dob,
+                "gender": gender,
+                "school": school,
+                "parent": parent,
+                "phone": phone,
+                "email": email,
+                "address": address,
+                "enrollment": enrollment,
+                "mode": mode,
+                "workshops": "; ".join(workshops),
+                "level": level,
+                "style": st.session_state.get("style", ""),
+                "pref_time": pref_time,
+                "experience": experience,
+                "em_name": em_name,
+                "em_rel": em_rel,
+                "em_phone": em_phone,
+                "medical": medical,
+                "consent": consent,
+                "signature": signature,
+                "sig_date": sig_date.isoformat()
+            }
+            save_registration(record)
+            st.success("Registration submitted successfully!")
+
+elif page == "Admin":
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown('<div class="title">Admin Dashboard</div>', unsafe_allow_html=True)
+
+    ADMIN_PASS = os.environ.get("ADMIN_PASS", "aara-admin-2026")
+
+    if not st.session_state.admin_authenticated:
+        pwd = st.text_input("Enter admin password", type="password")
+        if st.button("Login"):
+            if pwd == ADMIN_PASS:
+                st.session_state.admin_authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+    else:
+        st.success("Admin authenticated.")
+
+        regs = read_csv(REG_FILE)
+        visits = read_csv(VISIT_FILE)
+
+        st.subheader("Overview")
+        st.write(f"Total registrations: **{len(regs)}**")
+        st.write(f"Total site visits: **{len(visits)}**")
+
+        st.subheader("Registrations")
+        if regs.empty:
+            st.info("No registrations yet.")
+        else:
+            st.dataframe(regs)
+            st.download_button("Download Registrations CSV", regs.to_csv(index=False), "registrations.csv")
+
+        st.subheader("Site Visits")
+        if visits.empty:
+            st.info("No visits yet.")
+        else:
+            st.dataframe(visits)
+            st.download_button("Download Visits CSV", visits.to_csv(index=False), "site_visits.csv")
+
+        st.markdown("---")
+        if st.button("Logout"):
+            st.session_state.admin_authenticated = False
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# WHATSAPP BUTTON
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">💬</a>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------
+# BOTTOM NAV
+# ---------------------------------------------------------
+home = "active" if page == "Home" else ""
+classes = "active" if page == "Classes" else ""
+reg = "active" if page == "Register" else ""
+admin = "active" if page == "Admin" else ""
+
+st.markdown(
+    f"""
+    <div class="bottom-nav">
+      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{admin}" href="/?page=Admin"><span>🔐</span>Admin</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------
+# FOOTER
+# ---------------------------------------------------------
+st.markdown(
+    '<div class="footer">© AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>',
+    unsafe_allow_html=True,
+)
