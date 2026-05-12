@@ -1,5 +1,10 @@
-# ADS_app.py — A06.3
-# Black–Gold–Red flyer theme, Purdance-style layout, vertical registration cards
+# ADS_app.py — B01
+# Baseline: A06.3 (black–gold–red flyer theme)
+# Changes:
+# - Registration page: single "Submit Form" button (no duplicate "Register now")
+# - Form labels & fields use dark theme colors (no grey/white old theme)
+# - Logo.png rendered correctly (no blue question mark)
+# - Home page slideshow: auto banner-style slider with fade transition
 
 import streamlit as st
 import pandas as pd
@@ -49,7 +54,7 @@ if "page" in params:
 page = st.session_state.page
 
 # ---------------------------------------------------------
-# THEME COLORS (flyer style)
+# THEME COLORS (flyer style baseline B00)
 # ---------------------------------------------------------
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
@@ -61,7 +66,7 @@ CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
 # ---------------------------------------------------------
-# CSS — Flyer theme + animations
+# CSS — Flyer theme + animations + form field styling + slideshow
 # ---------------------------------------------------------
 CSS = f"""
 <style>
@@ -256,6 +261,60 @@ html, body, [data-testid="stAppViewContainer"] {{
   margin-top:4px;
 }}
 
+/* Form fields & labels in dark theme */
+label {{
+  color:{GOLD_SOFT} !important;
+}}
+
+input, textarea, select {{
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
+  border:1px solid {GOLD};
+  border-radius:8px;
+}}
+
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > select,
+.stDateInput > div > div > input {{
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
+  border:1px solid {GOLD};
+}}
+
+.stRadio > div label, .stCheckbox > div label {{
+  color:{GOLD_SOFT} !important;
+}}
+
+/* Slideshow banner */
+.slideshow-container {{
+  position: relative;
+  width: 100%;
+  max-width: 820px;
+  height: 320px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+  border: 1px solid {GOLD};
+}}
+
+.slide-fade {{
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: fadeSlide 24s infinite;
+}}
+
+@keyframes fadeSlide {{
+  0% {{ opacity: 0; }}
+  5% {{ opacity: 1; }}
+  20% {{ opacity: 1; }}
+  25% {{ opacity: 0; }}
+  100% {{ opacity: 0; }}
+}}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -285,28 +344,26 @@ def read_csv(path):
 log_visit()
 
 # ---------------------------------------------------------
-# HEADER — Flyer-style logo + glow
+# HEADER — use st.image for logo (fix blue question mark)
 # ---------------------------------------------------------
 def render_header():
-    if os.path.exists(LOGO_PATH):
-        logo_html = f'<img src="{LOGO_PATH}" width="140" style="border-radius:50%; box-shadow:0 0 25px rgba(212,175,55,0.7);" />'
-    else:
-        logo_html = ""
-
-    st.markdown(
-        f"""
-        <div style="text-align:center; padding:22px 0 10px 0;">
-            {logo_html}
-            <div style="font-size:1.9rem; font-weight:700; margin-top:10px; color:{GOLD}; font-family:'Playfair Display', serif;">
-                AARA Dance Studio
+    col = st.container()
+    with col:
+        if os.path.exists(LOGO_PATH):
+            st.image(LOGO_PATH, width=140)
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin-top:4px;">
+                <div style="font-size:1.9rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
+                    AARA Dance Studio
+                </div>
+                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
+                    Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+                </div>
             </div>
-            <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                Life is Beautiful, when you Dance · Fate · Rockwall · Dallas, TX
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
 render_header()
 
@@ -336,7 +393,7 @@ def render_qr_section():
     st.image(buf, caption="Scan to open registration page", width=140)
 
 # ---------------------------------------------------------
-# HOME PAGE — Flyer theme + hero + banner
+# HOME PAGE — Flyer theme + hero + auto slideshow
 # ---------------------------------------------------------
 def render_home():
     # Early bird banner (red bar)
@@ -386,16 +443,32 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow
+    # Slideshow banner
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown(
         f'<div class="title" style="font-size:1.4rem;">Studio Moments</div>',
         unsafe_allow_html=True,
     )
 
-    images = sorted(glob.glob("slide*.jpeg"))
+    images = sorted(glob.glob("slide*.jpg")) + sorted(glob.glob("slide*.jpeg")) + sorted(glob.glob("slide*.png"))
+    images = images[:5]  # limit to 5 for timing
+
     if images:
-        st.image(images, width=700)
+        slides_html = []
+        for idx, path in enumerate(images):
+            delay = idx * 6  # 6s per slide in 24s cycle
+            slides_html.append(
+                f'<img src="{os.path.basename(path)}" class="slide-fade" style="animation-delay:{delay}s;" />'
+            )
+        slides_html = "\n".join(slides_html)
+        st.markdown(
+            f"""
+            <div class="slideshow-container">
+                {slides_html}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         st.info("Upload slide1.jpeg, slide2.jpeg, slide3.jpeg (etc.) in the root directory for a slideshow.")
 
@@ -464,10 +537,10 @@ def render_about():
         unsafe_allow_html=True,
     )
 
-    if os.path.exists("instructor.jpeg"):
-        st.image("instructor.jpeg", width=260)
+    if os.path.exists("instructor.jpg"):
+        st.image("instructor.jpg", width=260)
     else:
-        st.info("Instructor photo placeholder (upload instructor.jpeg in root directory).")
+        st.info("Instructor photo placeholder (upload instructor.jpg in root directory).")
 
     st.markdown(
         f"""
@@ -535,7 +608,7 @@ def render_admin():
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# REGISTRATION PAGE — Vertical cards (lift & shadow)
+# REGISTRATION PAGE — Vertical cards, single "Submit Form" button
 # ---------------------------------------------------------
 def render_register():
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -647,11 +720,8 @@ def render_register():
                                   placeholder=required_placeholders["signature"])
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
-        # st.markdown(
-        #     '<div style="margin-top:10px;"><button type="submit" class="btn-primary">Register Now</button></div>',
-        #     unsafe_allow_html=True,
-        # )
-        submitted = st.form_submit_button("Submit")
+        # SINGLE submit button with new label
+        submitted = st.form_submit_button("Submit Form")
 
     if submitted:
         missing = []
