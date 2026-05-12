@@ -301,7 +301,7 @@ def render_header():
                 AARA Dance Studio
             </div>
             <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+                Life is Beautiful, when you Dance · Fate · Rockwall · Dallas, TX
             </div>
         </div>
         """,
@@ -393,11 +393,11 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    images = sorted(glob.glob("slide*.jpg"))
+    images = sorted(glob.glob("slide*.jpeg"))
     if images:
         st.image(images, width=700)
     else:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
+        st.info("Upload slide1.jpeg, slide2.jpeg, slide3.jpeg (etc.) in the root directory for a slideshow.")
 
     st.markdown('</div>', unsafe_allow_html=True)
     render_qr_section()
@@ -464,10 +464,10 @@ def render_about():
         unsafe_allow_html=True,
     )
 
-    if os.path.exists("instructor.jpg"):
-        st.image("instructor.jpg", width=260)
+    if os.path.exists("instructor.jpeg"):
+        st.image("instructor.jpeg", width=260)
     else:
-        st.info("Instructor photo placeholder (upload instructor.jpg in root directory).")
+        st.info("Instructor photo placeholder (upload instructor.jpeg in root directory).")
 
     st.markdown(
         f"""
