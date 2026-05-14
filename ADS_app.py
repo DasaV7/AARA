@@ -36,7 +36,7 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
-LOGO_PATH = "Logo.png"
+LOGO_PATH = "logo.png"
 
 # ---------------------------------------------------------
 # SESSION STATE
@@ -355,24 +355,16 @@ log_visit()
 # HEADER — use st.image for logo (fix blue question mark)
 # ---------------------------------------------------------
 def render_header():
-    # Center the logo using 3 columns
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        # Try to load logo safely
         if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, width=200)   # enlarged logo
-        else:
-            st.markdown(
-                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>",
-                unsafe_allow_html=True
-            )
+            st.image(LOGO_PATH, width=220)  # bigger logo
 
-        # Studio title + subtitle
         st.markdown(
             f"""
-            <div style="text-align:center; margin-top:6px;">
-                <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
+            <div style="text-align:center; margin-top:4px;">
+                <div style="font-size:2.0rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
@@ -382,8 +374,6 @@ def render_header():
             """,
             unsafe_allow_html=True,
         )
-
-
 # ---------------------------------------------------------
 # WHATSAPP BUTTON (Top Right)
 # ---------------------------------------------------------
