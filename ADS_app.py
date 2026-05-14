@@ -692,7 +692,7 @@ def render_register():
         gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender",label_visibility="visible")
         st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
         
-        school = st.text_input("School Name (optional)", key="school",,label_visibility="visible")
+        school = st.text_input("School Name (optional)", key="school",label_visibility="visible")
         st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
         # Card 2 — Class Details
