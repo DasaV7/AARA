@@ -36,7 +36,7 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
-LOGO_PATH = "logo.png"
+LOGO_PATH = "Logo.png"
 
 # ---------------------------------------------------------
 # SESSION STATE
@@ -376,10 +376,7 @@ def render_header():
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                    Where Passion Meets Performance
-                </div>
-                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                    · Fate · Rockwall · Dallas, TX .
+                    Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
                 </div>
             </div>
             """,
