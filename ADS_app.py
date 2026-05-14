@@ -376,7 +376,10 @@ def render_header():
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                    Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+                    Where Passion Meets Performance
+                </div>
+                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
+                    · Fate · Rockwall · Dallas, TX .
                 </div>
             </div>
             """,
