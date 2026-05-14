@@ -717,10 +717,7 @@ def render_register():
                                   placeholder=required_placeholders["signature"])
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
-        st.markdown(
-            '<div style="margin-top:10px;"><button type="submit" class="btn-primary">Register Now</button></div>',
-            unsafe_allow_html=True,
-        )
+
         submitted = st.form_submit_button("Register Now")
 
     if submitted:
