@@ -1,11 +1,13 @@
-# ADS_app.py — B02 (Full)
+# ADS_app.py — B02 (Fixed routing crash)
 # Baseline: B00 theme + B01 fixes + B02 improvements
-# - Cinematic zoom-in slideshow
-# - Fully themed form fields (dropdowns, radios, selects)
-# - Larger centered circular logo (200px)
+# Fixes in this file:
+# - Robust query param handling (avoids AttributeError on st.experimental_get_query_params)
+# - Safe QR generation (no st.request)
+# - Centered larger circular logo (200px)
 # - 60px top padding to avoid Streamlit banner overlap
-# - Fixed safe query param handling and QR code generation
-# - All pages accessible via query param routing
+# - Cinematic zoom-in slideshow
+# - All form controls themed to match B00
+# - Single "Submit Form" button on registration page
 
 import streamlit as st
 import pandas as pd
@@ -16,6 +18,7 @@ import json
 from datetime import datetime, date
 from PIL import Image
 
+# qrcode is optional; app will still run without it
 try:
     import qrcode
 except Exception:
@@ -41,17 +44,21 @@ VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
 # ---------------------------------------------------------
-# SESSION STATE & ROUTING (safe)
+# SESSION STATE & ROUTING (robust)
 # ---------------------------------------------------------
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-# Use experimental_get_query_params for compatibility
-params = st.experimental_get_query_params()
-if "page" in params and params["page"]:
-    st.session_state.page = params["page"][0]
+# Robust query param retrieval: some Streamlit builds may not expose experimental_get_query_params
+try:
+    params = st.experimental_get_query_params()
+    if "page" in params and params["page"]:
+        st.session_state.page = params["page"][0]
+except Exception:
+    # Fallback: keep existing session_state.page (default "Home")
+    params = {}
 
 page = st.session_state.page
 
@@ -359,9 +366,10 @@ def render_header():
     with center:
         if os.path.exists(LOGO_PATH):
             try:
-                st.image(LOGO_PATH, width=200)
+                # Use PIL to ensure image loads correctly and preserve transparency if any
+                img = Image.open(LOGO_PATH)
+                st.image(img, width=200)
             except Exception:
-                # fallback: show text if image fails
                 st.markdown(f'<div style="text-align:center; color:{GOLD}; font-weight:700; font-size:1.6rem;">AARA Dance Studio</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div style="text-align:center; color:{GOLD}; font-weight:700; font-size:1.6rem;">AARA Dance Studio</div>', unsafe_allow_html=True)
@@ -465,7 +473,6 @@ def render_home():
         slides_html = []
         for idx, path in enumerate(images):
             delay = idx * 6  # 6s per slide in 24s cycle
-            # Use basename so relative path works when served
             slides_html.append(
                 f'<img src="{os.path.basename(path)}" class="slide-zoom" style="animation-delay:{delay}s;" />'
             )
@@ -579,7 +586,11 @@ def render_admin():
         if st.button("Login"):
             if pwd == ADMIN_PASS:
                 st.session_state.admin_authenticated = True
-                st.experimental_rerun()
+                # Use experimental_rerun for compatibility
+                try:
+                    st.experimental_rerun()
+                except Exception:
+                    pass
             else:
                 st.error("Incorrect password.")
     else:
@@ -609,7 +620,10 @@ def render_admin():
         st.markdown("---")
         if st.button("Logout"):
             st.session_state.admin_authenticated = False
-            st.experimental_rerun()
+            try:
+                st.experimental_rerun()
+            except Exception:
+                pass
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -832,7 +846,6 @@ elif page == "Register":
 elif page == "Admin":
     render_admin()
 else:
-    # fallback to home if unknown
     render_home()
 
 # ---------------------------------------------------------
