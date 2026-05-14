@@ -303,17 +303,19 @@ input::placeholder, textarea::placeholder {{
 
 .stMultiSelect div {{
   background:#151515 !important;
-  background:#151515 !important;
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
 }}
 
 .stRadio label, .stRadio div[role="radio"] {{
   color:{GOLD_SOFT} !important;
+  background:#151515 !important;
 }}
 
 .stRadio div[role="radio"] input[type="radio"] {{
   accent-color: {GOLD} !important;
+  color:{GOLD_SOFT} !important;
+  background:#151515 !important;
 }}
 
 .stDateInput input {{
