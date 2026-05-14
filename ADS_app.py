@@ -277,7 +277,7 @@ input, textarea, select {{
 
 input::placeholder, textarea::placeholder {{
   color:{GOLD_SOFT} !important;
-  opacity:0.85 !important;
+  opacity:0.1 !important;
 }}
 
 .stTextInput input,
