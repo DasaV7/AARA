@@ -296,10 +296,13 @@ input::placeholder, textarea::placeholder {{
 }}
 
 .stSelectbox svg {{
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
   fill:{GOLD} !important;
 }}
 
 .stMultiSelect div {{
+  background:#151515 !important;
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
