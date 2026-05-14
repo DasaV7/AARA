@@ -1,27 +1,22 @@
-# ADS_app.py — B02 (Fixed routing crash)
-# Baseline: B00 theme + B01 fixes + B02 improvements
-# Fixes in this file:
-# - Robust query param handling (avoids AttributeError on st.experimental_get_query_params)
-# - Safe QR generation (no st.request)
-# - Centered larger circular logo (200px)
-# - 60px top padding to avoid Streamlit banner overlap
-# - Cinematic zoom-in slideshow
-# - All form controls themed to match B00
-# - Single "Submit Form" button on registration page
+# ADS_app.py — B01 (Registration form fields fixed)
+# Baseline: A06.3 / B00 theme + B01 fixes
+# Change in this file:
+# - Only registration form styling adjusted so all form controls match the dark black–gold theme
+# - Overrides for dropdowns, multiselects, radios, date inputs, placeholders, and select arrows
+# - No other structural changes from B01
 
 import streamlit as st
 import pandas as pd
 import os
-import glob
-import io
 import json
+import glob
 from datetime import datetime, date
 from PIL import Image
+import io
 
-# qrcode is optional; app will still run without it
 try:
     import qrcode
-except Exception:
+except ImportError:
     qrcode = None
 
 # ---------------------------------------------------------
@@ -44,26 +39,21 @@ VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
 # ---------------------------------------------------------
-# SESSION STATE & ROUTING (robust)
+# SESSION STATE
 # ---------------------------------------------------------
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-# Robust query param retrieval: some Streamlit builds may not expose experimental_get_query_params
-try:
-    params = st.experimental_get_query_params()
-    if "page" in params and params["page"]:
-        st.session_state.page = params["page"][0]
-except Exception:
-    # Fallback: keep existing session_state.page (default "Home")
-    params = {}
+params = st.query_params
+if "page" in params:
+    st.session_state.page = params["page"]
 
 page = st.session_state.page
 
 # ---------------------------------------------------------
-# THEME COLORS (B00 baseline)
+# THEME COLORS (flyer style baseline B00)
 # ---------------------------------------------------------
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
@@ -75,7 +65,8 @@ CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
 # ---------------------------------------------------------
-# CSS — B02 (top padding, form fixes, slideshow zoom, logo spacing)
+# CSS — Flyer theme + animations + form field styling + slideshow
+# (Registration form fixes applied here)
 # ---------------------------------------------------------
 CSS = f"""
 <style>
@@ -90,9 +81,13 @@ html, body, [data-testid="stAppViewContainer"] {{
     color: {TEXT} !important;
 }}
 
+* {{
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui;
+}}
+
 .block-container {{
-  padding-top: 60px !important; /* Prevent Streamlit banner overlap */
-  max-width: 920px;
+  padding-top: 0.5rem;
+  max-width: 900px;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -107,7 +102,6 @@ html, body, [data-testid="stAppViewContainer"] {{
   border-radius:14px;
   border:1px solid {BORDER};
   margin-bottom:14px;
-  box-shadow:0 0 18px rgba(0,0,0,0.6);
 }}
 
 .title {{
@@ -131,53 +125,39 @@ html, body, [data-testid="stAppViewContainer"] {{
   border-radius:999px;
   text-decoration:none;
   font-weight:600;
-  border:none;
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease;
 }}
 .btn-primary:hover {{
   background:{GOLD_SOFT};
-  transform:translateY(-1px);
-  box-shadow:0 8px 20px rgba(0,0,0,0.6);
 }}
 
 .btn-secondary {{
   display:inline-block;
   padding:12px 22px;
-  background:transparent;
-  color:{GOLD_SOFT} !important;
+  background:white;
+  color:{TEXT} !important;
   border-radius:999px;
-  border:1px solid {GOLD};
+  border:1px solid #d1d5db;
   text-decoration:none;
   font-weight:500;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease;
 }}
 .btn-secondary:hover {{
-  background:{GOLD};
-  color:{BG_TOP} !important;
-  transform:translateY(-1px);
+  background:#f2f2f7;
 }}
 
-.class-card {{
-  padding:12px;
-  border-radius:12px;
-  background:#151515;
-  border:1px solid {GOLD};
-  margin-bottom:10px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.7);
-}}
-
-.required-label::after {{
-    content: " *";
-    color: #e11d48;
-    font-weight: 700;
-}}
-
-.footer {{
-  text-align:center;
-  color:{GOLD};
-  font-size:0.8rem;
-  margin-top:40px;
-  margin-bottom:60px;
+.whatsapp-btn {{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:#25D366;
+  color:white;
+  padding:14px 16px;
+  border-radius:50%;
+  font-size:22px;
+  text-decoration:none;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  z-index:9999;
 }}
 
 .bottom-nav {{
@@ -185,7 +165,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   bottom:0;
   left:0;
   right:0;
-  background:#050505;
+  background:{CARD_BG};
   border-top:1px solid {BORDER};
   display:flex;
   justify-content:space-around;
@@ -196,7 +176,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 .bottom-nav a {{
   text-decoration:none;
   font-size:0.85rem;
-  color:{GOLD_SOFT};
+  color:{TEXT};
   text-align:center;
 }}
 
@@ -209,35 +189,53 @@ html, body, [data-testid="stAppViewContainer"] {{
   color:{GOLD};
 }}
 
-.whatsapp-btn {{
-  position:fixed;
-  top:80px; /* moved down to avoid banner */
-  right:20px;
-  background:#25D366;
-  color:white;
-  padding:14px 16px;
-  border-radius:50%;
-  font-size:22px;
-  text-decoration:none;
-  box-shadow:0 4px 12px rgba(0,0,0,0.8);
-  z-index:9999;
+.class-card {{
+  padding:10px;
+  border-radius:10px;
+  background:rgba(15,23,42,0.03);
+  border:1px solid {BORDER};
+  margin-bottom:8px;
 }}
 
-/* Registration vertical cards */
+.required-label::after {{
+    content: " *";
+    color: #e11d48;
+    font-weight: 700;
+}}
+
+@keyframes shake {{
+  10%, 90% {{ transform: translateX(-1px); }}
+  20%, 80% {{ transform: translateX(2px); }}
+  30%, 50%, 70% {{ transform: translateX(-4px); }}
+  40%, 60% {{ transform: translateX(4px); }}
+}}
+
+.shake {{
+  animation: shake 0.35s ease-in-out;
+}}
+
+.footer {{
+  text-align:center;
+  color:#9ca3af;
+  font-size:0.8rem;
+  margin-top:40px;
+  margin-bottom:60px;
+}}
+
 .reg-card {{
   border-radius:14px;
-  border:1px solid {GOLD};
-  background:#151515;
+  border:1px solid {BORDER};
+  background:{CARD_BG};
   padding:14px 16px;
   margin-bottom:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.8);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow:0 4px 10px rgba(15,23,42,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   cursor:pointer;
 }}
 .reg-card:hover {{
-  transform: translateY(-6px);
-  box-shadow:0 14px 32px rgba(0,0,0,0.9);
-  border-color:{GOLD_SOFT};
+  transform: translateY(-4px);
+  box-shadow:0 10px 24px rgba(15,23,42,0.14);
+  border-color:{GOLD};
 }}
 
 .reg-card-header {{
@@ -246,16 +244,25 @@ html, body, [data-testid="stAppViewContainer"] {{
   align-items:center;
   font-weight:600;
   font-size:1rem;
-  color:{GOLD_SOFT};
+  color:{TEXT};
 }}
 
 .reg-card-sub {{
   font-size:0.9rem;
-  color:#d1c7a5;
+  color:#6b7280;
   margin-top:4px;
 }}
 
-/* FORM FIELD FIXES (B02) */
+/* -------------------------
+   REGISTRATION FORM FIXES
+   Ensure all form controls match the dark theme:
+   - Background: #151515
+   - Text: soft gold (#f5e8c7)
+   - Border: gold (#d4af37)
+   - Placeholder color adjusted
+   - Select arrow and radio visuals themed
+   ------------------------- */
+
 label {{
   color:{GOLD_SOFT} !important;
 }}
@@ -267,24 +274,15 @@ input, textarea, select {{
   border-radius:8px !important;
 }}
 
+input::placeholder, textarea::placeholder {{
+  color:{GOLD_SOFT} !important;
+  opacity:0.85 !important;
+}}
+
 .stTextInput input,
 .stTextArea textarea,
 .stSelectbox select,
 .stDateInput input {{
-  background:#151515 !important;
-  color:{GOLD_SOFT} !important;
-  border:1px solid {GOLD} !important;
-}}
-
-.stRadio label {{
-  color:{GOLD_SOFT} !important;
-}}
-
-.stRadio div[role="radio"] {{
-  border:2px solid {GOLD} !important;
-}}
-
-.stMultiSelect div {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
@@ -300,35 +298,26 @@ input, textarea, select {{
   fill:{GOLD} !important;
 }}
 
-/* CINEMATIC ZOOM-IN SLIDESHOW */
-.slideshow-container {{
-  position: relative;
-  width: 100%;
-  max-width: 860px;
-  height: 360px;
-  margin: 0 auto;
-  overflow: hidden;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
-  border: 1px solid {GOLD};
+.stMultiSelect div {{
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
+  border:1px solid {GOLD} !important;
 }}
 
-.slide-zoom {{
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  animation: zoomFade 24s infinite;
+.stRadio label, .stRadio div[role="radio"] {{
+  color:{GOLD_SOFT} !important;
 }}
 
-@keyframes zoomFade {{
-  0% {{ opacity: 0; transform: scale(1); }}
-  5% {{ opacity: 1; transform: scale(1.03); }}
-  20% {{ opacity: 1; transform: scale(1.08); }}
-  25% {{ opacity: 0; transform: scale(1.08); }}
-  100% {{ opacity: 0; transform: scale(1); }}
+.stRadio div[role="radio"] input[type="radio"] {{
+  accent-color: {GOLD} !important;
 }}
+
+.stDateInput input {{
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
+  border:1px solid {GOLD} !important;
+}}
+
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -358,26 +347,20 @@ def read_csv(path):
 log_visit()
 
 # ---------------------------------------------------------
-# HEADER — Larger centered circular logo (200px)
+# HEADER — use st.image for logo (fix blue question mark)
 # ---------------------------------------------------------
 def render_header():
-    # Use columns to center reliably
-    left, center, right = st.columns([1, 2, 1])
-    with center:
+    col = st.container()
+    with col:
         if os.path.exists(LOGO_PATH):
-            try:
-                # Use PIL to ensure image loads correctly and preserve transparency if any
-                img = Image.open(LOGO_PATH)
-                st.image(img, width=200)
-            except Exception:
-                st.markdown(f'<div style="text-align:center; color:{GOLD}; font-weight:700; font-size:1.6rem;">AARA Dance Studio</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div style="text-align:center; color:{GOLD}; font-weight:700; font-size:1.6rem;">AARA Dance Studio</div>', unsafe_allow_html=True)
-
+            st.image(LOGO_PATH, width=140)
         st.markdown(
             f"""
-            <div style="text-align:center; margin-top:6px;">
-                <div style="font-size:1.05rem; color:{GOLD_SOFT};">
+            <div style="text-align:center; margin-top:4px;">
+                <div style="font-size:1.9rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
+                    AARA Dance Studio
+                </div>
+                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
                     Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
                 </div>
             </div>
@@ -388,7 +371,7 @@ def render_header():
 render_header()
 
 # ---------------------------------------------------------
-# WHATSAPP BUTTON (moved down to avoid banner)
+# WHATSAPP BUTTON (Top Right)
 # ---------------------------------------------------------
 st.markdown(
     """
@@ -398,14 +381,14 @@ st.markdown(
 )
 
 # ---------------------------------------------------------
-# QR CODE SECTION (safe)
+# QR CODE SECTION
 # ---------------------------------------------------------
 def render_qr_section():
     if qrcode is None:
         return
     st.markdown("#### Quick Registration QR")
-    # If you have a deployed URL, replace the placeholder below with it.
-    reg_url = "https://your-app-url/?page=Register"
+    base = st.request.url.split("?")[0] if hasattr(st, "request") else ""
+    reg_url = base + "?page=Register"
     try:
         qr_img = qrcode.make(reg_url)
         buf = io.BytesIO()
@@ -416,77 +399,46 @@ def render_qr_section():
         st.info("QR generation not available in this environment.")
 
 # ---------------------------------------------------------
-# HOME PAGE — Cinematic zoom-in slideshow
+# HOME PAGE — Purdance-style hero + slideshow
 # ---------------------------------------------------------
 def render_home():
     st.markdown(
         f"""
-        <div style="
-            background:{RED};
-            color:{GOLD_SOFT};
-            text-align:center;
-            padding:10px;
-            border-radius:10px;
-            margin-bottom:14px;
-            box-shadow:0 8px 20px rgba(0,0,0,0.8);
-            font-weight:600;
-        ">
-          ★ EARLY BIRD OFFER ★ — First 10 Registrations Only $50/month for 3 Months!<br>
-          <span style="font-size:0.9rem; font-weight:400;">Limited spots · Register now to lock in your rate</span>
+        <div class="section" style="display:flex; flex-direction:column; gap:18px;">
+            <div>
+                <div style="font-size:2rem; font-weight:800; color:{GOLD}; margin-bottom:6px;">
+                    Dance. Express. Shine.
+                </div>
+                <div style="font-size:1.05rem; color:#4b5563; max-width:520px;">
+                    AARA Dance Studio brings Bollywood, Kollywood, Tollywood, Kuthu, Hip Hop and more
+                    to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults to find their groove.
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    # Slideshow
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Studio Moments", unsafe_allow_html=True)
+
+    images = sorted(glob.glob("slide*.jpg"))
+    if images:
+        st.image(images, width=700)
+    else:
+        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
 
     st.markdown(
         f"""
-        <div class="section">
-            <div style="font-size:2.2rem; font-weight:800; color:{GOLD}; font-family:'Playfair Display', serif;">
-                Dance. Express. Shine.
-            </div>
-            <div style="font-size:1.02rem; color:{GOLD_SOFT}; max-width:640px; margin-top:8px;">
-                AARA Dance Studio brings Bollywood, Kollywood, Tollywood, Kuthu, Hip Hop and more
-                to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults to find their groove.
-            </div>
-            <div style="margin-top:12px; font-size:0.95rem; color:{GOLD_SOFT};">
-                Dance Instructor: <b>Mrs. Rekha Mahendran &amp; Mahendran Ramachandran</b><br>
-                📍 315 Spirehaven Dr, Rockwall, TX 75087
-            </div>
-            <div style="margin-top:14px;">
-                <a class="btn-primary" href="/?page=Register">Register Now</a>
-                &nbsp;&nbsp;
-                <a class="btn-secondary" href="/?page=Classes">View Classes</a>
-            </div>
+        <div style="margin-top:10px;">
+            <a class="btn-primary" href="/?page=Register">Register Now</a>
+            &nbsp;&nbsp;
+            <a class="btn-secondary" href="/?page=Classes">View Classes</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown(f'<div class="title" style="font-size:1.4rem;">Studio Moments</div>', unsafe_allow_html=True)
-
-    # Collect slide images (jpg/jpeg/png)
-    images = sorted(glob.glob("slide*.jpg")) + sorted(glob.glob("slide*.jpeg")) + sorted(glob.glob("slide*.png"))
-    images = images[:5]  # limit to 5 slides
-
-    if images:
-        slides_html = []
-        for idx, path in enumerate(images):
-            delay = idx * 6  # 6s per slide in 24s cycle
-            slides_html.append(
-                f'<img src="{os.path.basename(path)}" class="slide-zoom" style="animation-delay:{delay}s;" />'
-            )
-        slides_html = "\n".join(slides_html)
-        st.markdown(
-            f"""
-            <div class="slideshow-container">
-                {slides_html}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.info("Upload slide1.jpeg, slide2.jpeg, slide3.jpeg (etc.) in the app root for a cinematic slideshow.")
 
     st.markdown('</div>', unsafe_allow_html=True)
     render_qr_section()
@@ -500,39 +452,45 @@ def render_classes():
     st.markdown('<div class="subtitle">Choose the program that fits your dancer best.</div>', unsafe_allow_html=True)
 
     st.markdown(
-        f"""
+        """
         <div class="class-card">
-            <div style="color:{GOLD}; font-weight:700;">Tiny Stars (Ages 5–8)</div>
-            <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Wed &amp; Fri · 6:30–7:30 PM</div>
-            <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $60 · 8 classes: $100</div>
+            <b>Tiny Stars (Ages 5–8)</b><br>
+            Beginner / Intermediate<br>
+            Wed & Fri · 6:30–7:30 PM<br>
+            4 classes: $60 · 8 classes: $100
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        f"""
+        """
         <div class="class-card">
-            <div style="color:{GOLD}; font-weight:700;">Shining Stars (Ages 9+)</div>
-            <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Tue · 7–8 PM</div>
-            <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $60 · 8 classes: $100</div>
+            <b>Shining Stars (Ages 9+)</b><br>
+            Beginner / Intermediate<br>
+            Tue · 7–8 PM<br>
+            4 classes: $60 · 8 classes: $100
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        f"""
+        """
         <div class="class-card">
-            <div style="color:{GOLD}; font-weight:700;">Dream Chasers (Ladies 18+)</div>
-            <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Thu 6:30–7:30 PM · Sat 10:30–11:30 AM</div>
-            <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $50 · 8 classes: $80</div>
+            <b>Dream Chasers (Ladies 18+)</b><br>
+            Beginner / Intermediate<br>
+            Thu 6:30–7:30 PM · Sat 10:30–11:30 AM<br>
+            4 classes: $50 · 8 classes: $80
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<a class="btn-primary" href="/?page=Register">Register Now</a>',
+        unsafe_allow_html=True,
+    )
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
@@ -542,8 +500,8 @@ def render_about():
     st.markdown('<div class="section">', unsafe_allow_html=True)
 
     st.markdown(
-        f"""
-        <div style="text-align:center; font-size:1.9rem; font-weight:800; margin-bottom:10px; color:{GOLD}; font-family:'Playfair Display', serif;">
+        """
+        <div style="text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:10px;">
             Find your Groove!
         </div>
         """,
@@ -556,8 +514,8 @@ def render_about():
         st.info("Instructor photo placeholder (upload instructor.jpg in root directory).")
 
     st.markdown(
-        f"""
-        <ul style="font-size:1rem; line-height:1.6; margin-top:10px; color:{GOLD_SOFT};">
+        """
+        <ul style="font-size:1rem; line-height:1.6; margin-top:10px;">
             <li><b>Bollywood</b> – A fun and energetic dance style inspired by Hindi movie songs and Indian cinema.</li>
             <li><b>Kollywood</b> – A vibrant dance form based on Tamil movie music, known for expressive moves and powerful energy.</li>
             <li><b>Tollywood</b> – A lively dance style inspired by Telugu film songs, featuring fast beats and dynamic choreography.</li>
@@ -586,11 +544,7 @@ def render_admin():
         if st.button("Login"):
             if pwd == ADMIN_PASS:
                 st.session_state.admin_authenticated = True
-                # Use experimental_rerun for compatibility
-                try:
-                    st.experimental_rerun()
-                except Exception:
-                    pass
+                st.rerun()
             else:
                 st.error("Incorrect password.")
     else:
@@ -620,16 +574,13 @@ def render_admin():
         st.markdown("---")
         if st.button("Logout"):
             st.session_state.admin_authenticated = False
-            try:
-                st.experimental_rerun()
-            except Exception:
-                pass
+            st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# REGISTRATION PAGE — Vertical cards, single "Submit Form" button
-# (All form controls themed to match B00)
+# REGISTRATION PAGE — Vertical Cards with Hover + Form
+# (Only styling changes applied above; structure unchanged)
 # ---------------------------------------------------------
 def render_register():
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -741,8 +692,11 @@ def render_register():
                                   placeholder=required_placeholders["signature"])
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
-        # SINGLE submit button with new label
-        submitted = st.form_submit_button("Submit Form")
+        st.markdown(
+            '<div style="margin-top:10px;"><button type="submit" class="btn-primary">Register Now</button></div>',
+            unsafe_allow_html=True,
+        )
+        submitted = st.form_submit_button("Register Now")
 
     if submitted:
         missing = []
@@ -785,7 +739,7 @@ def render_register():
                         const el = document.querySelector('[placeholder="'+p+'"]');
                         if (el) {{
                             el.style.borderColor = '#e11d48';
-                            el.style.boxShadow = '0 0 0 1px rgba(225,29,72,0.4)';
+                            el.style.boxShadow = '0 0 0 1px rgba(225,29,72,0.12)';
                         }}
                     }});
                     const sections = window.parent.document.querySelectorAll('.section');
@@ -845,8 +799,6 @@ elif page == "Register":
     render_register()
 elif page == "Admin":
     render_admin()
-else:
-    render_home()
 
 # ---------------------------------------------------------
 # BOTTOM NAV
@@ -874,6 +826,6 @@ st.markdown(
 # FOOTER
 # ---------------------------------------------------------
 st.markdown(
-    f'<div class="footer">© AARA Dance Studio · ADS · Dallas · Fate, TX</div>',
+    '<div class="footer">© AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>',
     unsafe_allow_html=True,
 )
