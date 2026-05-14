@@ -148,7 +148,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .whatsapp-btn {{
   position:fixed;
-  top:20px;
+  top:70px;
   right:20px;
   background:#25D366;
   color:white;
@@ -321,6 +321,11 @@ input::placeholder, textarea::placeholder {{
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
+
+/* Extra spacing so logo is never clipped */
+.block-container {
+    padding-top: 40px !important;
+}
 
 # ---------------------------------------------------------
 # UTILITIES
