@@ -297,13 +297,16 @@ input::placeholder, textarea::placeholder {{
 
 .stSelectbox svg {{
   background:#151515 !important;
+  fill:{CARD_BG} !important;
   color:{GOLD_SOFT} !important;
-  fill:{GOLD} !important;
+  border:1px solid {GOLD} !important;
+  
 }}
 
 .stMultiSelect div {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
+  fill:{CARD_BG} !important;
   border:1px solid {GOLD} !important;
 }}
 
@@ -313,9 +316,9 @@ input::placeholder, textarea::placeholder {{
 }}
 
 .stRadio div[role="radio"] input[type="radio"] {{
-  accent-color: {GOLD} !important;
-  color:{GOLD_SOFT} !important;
   background:#151515 !important;
+  accent-color: {GOLD_SOFT} !important;
+  color:{GOLD_SOFT} !important;
 }}
 
 .stDateInput input {{
