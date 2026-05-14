@@ -97,9 +97,9 @@ html, body, [data-testid="stAppViewContainer"] {{
   to {{ opacity: 1; transform: translateY(0); }}
 }}
 
-.block-container {
+.block-container {{
     padding-top: 40px !important;
-}
+}}
 
 .section {{
   background:{CARD_BG};
