@@ -81,11 +81,6 @@ html, body, [data-testid="stAppViewContainer"] {{
     color: {TEXT} !important;
 }}
 
-/* Extra spacing so logo is never clipped */
-.block-container {
-    padding-top: 40px !important;
-}
-
 * {{
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui;
 }}
@@ -153,7 +148,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .whatsapp-btn {{
   position:fixed;
-  top:20px;
+  top:70px;
   right:20px;
   background:#25D366;
   color:white;
@@ -322,7 +317,10 @@ input::placeholder, textarea::placeholder {{
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
 }}
-
+/* Extra spacing so logo is never clipped */
+.block-container {
+    padding-top: 40px !important;
+}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
