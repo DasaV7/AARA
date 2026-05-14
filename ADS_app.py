@@ -97,10 +97,6 @@ html, body, [data-testid="stAppViewContainer"] {{
   to {{ opacity: 1; transform: translateY(0); }}
 }}
 
-.block-container {{
-    padding-top: 40px !important;
-}}
-
 .section {{
   background:{CARD_BG};
   padding:18px;
@@ -321,6 +317,10 @@ input::placeholder, textarea::placeholder {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
+}}
+
+.block-container {{
+    padding-top: 40px !important;
 }}
 
 </style>
