@@ -367,6 +367,12 @@ div[data-baseweb="tag"] {{
     font-weight: 900;
 }}
 
+/* Date input fix */
+.stDateInput input {{
+    background: #151515 !important;
+    color: #f5e8c7 !important;
+    border: 1px solid #d4af37 !important;
+}}
 
 </style>
 """
