@@ -456,7 +456,7 @@ def render_home():
         <div style="margin-top:10px;">
             <a class="btn-primary" href="/?page=Register">Register Now</a>
             &nbsp;&nbsp;
-            <a class="btn-secondary" href="/?page=Classes">View Classes</a>
+            <a class="btn-primary" href="/?page=Classes">View Classes</a>
         </div>
         """,
         unsafe_allow_html=True,
