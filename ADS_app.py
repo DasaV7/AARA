@@ -296,29 +296,21 @@ input::placeholder, textarea::placeholder {{
 }}
 
 .stSelectbox svg {{
-  background:#151515 !important;
-  fill:{CARD_BG} !important;
-  color:{GOLD_SOFT} !important;
-  border:1px solid {GOLD} !important;
-  
+  fill:{GOLD} !important;
 }}
 
 .stMultiSelect div {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
-  fill:{CARD_BG} !important;
   border:1px solid {GOLD} !important;
 }}
 
 .stRadio label, .stRadio div[role="radio"] {{
   color:{GOLD_SOFT} !important;
-  background:#151515 !important;
 }}
 
 .stRadio div[role="radio"] input[type="radio"] {{
-  background:#151515 !important;
-  accent-color: {GOLD_SOFT} !important;
-  color:{GOLD_SOFT} !important;
+  accent-color: {GOLD} !important;
 }}
 
 .stDateInput input {{
@@ -377,7 +369,10 @@ def render_header():
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-                    Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+                    Where Passion Meets Performance
+                </div>
+                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
+                    · Fate · Rockwall · Dallas, TX
                 </div>
             </div>
             """,
