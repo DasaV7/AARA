@@ -420,14 +420,27 @@ def render_home():
     )
 
     # Slideshow
+    # Slideshow (robust: skip invalid/corrupted files)
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown("### Studio Moments", unsafe_allow_html=True)
 
-    images = sorted(glob.glob("slide*.jpg"))
-    if images:
-        st.image(images, width=700)
+    raw_files = sorted(glob.glob("slide*.jpg")) + sorted(glob.glob("slide*.jpeg")) + sorted(glob.glob("slide*.png"))
+    valid_images = []
+
+    for path in raw_files:
+        try:
+            img = Image.open(path)
+            img.load()  # force load to catch errors early
+            valid_images.append(img)
+        except Exception:
+            # Skip files that are not valid images
+            continue
+
+    if valid_images:
+        st.image(valid_images, width=700)
     else:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
+        st.info("Upload valid slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
+
 
     st.markdown(
         f"""
