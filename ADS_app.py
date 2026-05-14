@@ -70,6 +70,7 @@ BORDER = "#3a3a3a"
 # ---------------------------------------------------------
 CSS = f"""
 <style>
+
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
 
 :root {{
@@ -95,6 +96,10 @@ html, body, [data-testid="stAppViewContainer"] {{
   from {{ opacity: 0; transform: translateY(6px); }}
   to {{ opacity: 1; transform: translateY(0); }}
 }}
+
+.block-container {
+    padding-top: 40px !important;
+}
 
 .section {{
   background:{CARD_BG};
@@ -317,10 +322,7 @@ input::placeholder, textarea::placeholder {{
   color:{GOLD_SOFT} !important;
   border:1px solid {GOLD} !important;
 }}
-/* Extra spacing so logo is never clipped */
-.block-container {
-    padding-top: 40px !important;
-}
+
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
