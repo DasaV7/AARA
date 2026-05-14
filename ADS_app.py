@@ -148,7 +148,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .whatsapp-btn {{
   position:fixed;
-  top:70px;
+  top:20px;
   right:20px;
   background:#25D366;
   color:white;
@@ -322,11 +322,6 @@ input::placeholder, textarea::placeholder {{
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
-/* Extra spacing so logo is never clipped */
-.block-container {
-    padding-top: 40px !important;
-}
-
 # ---------------------------------------------------------
 # UTILITIES
 # ---------------------------------------------------------
@@ -355,24 +350,14 @@ log_visit()
 # HEADER — use st.image for logo (fix blue question mark)
 # ---------------------------------------------------------
 def render_header():
-    # Center the logo using 3 columns
-    col1, col2, col3 = st.columns([1, 2, 1])
-
-    with col2:
-        # Try to load logo safely
+    col = st.container()
+    with col:
         if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, width=200)   # enlarged logo
-        else:
-            st.markdown(
-                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>",
-                unsafe_allow_html=True
-            )
-
-        # Studio title + subtitle
+            st.image(LOGO_PATH, width=140)
         st.markdown(
             f"""
-            <div style="text-align:center; margin-top:6px;">
-                <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
+            <div style="text-align:center; margin-top:4px;">
+                <div style="font-size:1.9rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
@@ -382,6 +367,8 @@ def render_header():
             """,
             unsafe_allow_html=True,
         )
+
+render_header()
 
 # ---------------------------------------------------------
 # WHATSAPP BUTTON (Top Right)
@@ -432,27 +419,15 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow (robust: skip invalid/corrupted files)
+    # Slideshow
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown("### Studio Moments", unsafe_allow_html=True)
 
-    raw_files = sorted(glob.glob("slide*.jpg")) + sorted(glob.glob("slide*.jpeg")) + sorted(glob.glob("slide*.png"))
-    valid_images = []
-
-    for path in raw_files:
-        try:
-            img = Image.open(path)
-            img.load()  # force load to catch errors early
-            valid_images.append(img)
-        except Exception:
-            # Skip files that are not valid images
-            continue
-
-    if valid_images:
-        st.image(valid_images, width=700)
+    images = sorted(glob.glob("slide*.jpg"))
+    if images:
+        st.image(images, width=700)
     else:
-        st.info("Upload valid slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
-
+        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
 
     st.markdown(
         f"""
