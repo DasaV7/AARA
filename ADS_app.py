@@ -323,6 +323,51 @@ input::placeholder, textarea::placeholder {{
   border:1px solid {GOLD} !important;
 }}
 
+/* FORCE dark theme for selectbox, multiselect, dropdown */
+div[data-baseweb="select"] {{
+    background: #151515 !important;
+    color: #f5e8c7 !important;
+    border: 1px solid #d4af37 !important;
+}}
+
+div[data-baseweb="select"] * {{
+    color: #f5e8c7 !important;
+}}
+
+div[data-baseweb="select"] svg {{
+    fill: #d4af37 !important;
+}}
+
+/* Multiselect chips */
+div[data-baseweb="tag"] {{
+    background: #8b0000 !important;
+    color: #f5e8c7 !important;
+    border-radius: 6px !important;
+}}
+
+/* Fix radio button text opacity */
+.stRadio label {{
+    color: #f5e8c7 !important;
+    opacity: 1 !important;
+}}
+
+/* Gold radio circle */
+.stRadio div[role="radio"] {{
+    border: 2px solid #d4af37 !important;
+}}
+
+.stRadio div[role="radio"] input[type="radio"] {{
+    accent-color: #d4af37 !important;
+}}
+
+/* Red star for required fields */
+.required-label::after {{
+    content: " *";
+    color: #ff4d4d;
+    font-weight: 900;
+}}
+
+
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -636,11 +681,19 @@ def render_register():
             unsafe_allow_html=True,
         )
         student_name = st.text_input("Student Name", key="student_name",
-                                     placeholder=required_placeholders["student_name"])
+                             placeholder=required_placeholders["student_name"],
+                             label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
+
         dob = st.text_input("Date of Birth (Age)", key="dob",
-                            placeholder=required_placeholders["dob"])
-        gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender")
-        school = st.text_input("School Name (optional)", key="school")
+                            placeholder=required_placeholders["dob"],label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
+        
+        gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender",label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
+        
+        school = st.text_input("School Name (optional)", key="school",,label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
         # Card 2 — Class Details
         st.markdown(
@@ -718,7 +771,7 @@ def render_register():
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
 
-        submitted = st.form_submit_button("Register Now")
+        submitted = st.form_submit_button("Submit Now")
 
     if submitted:
         missing = []
