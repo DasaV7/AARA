@@ -296,6 +296,8 @@ input::placeholder, textarea::placeholder {{
 }}
 
 .stSelectbox svg {{
+  background:#151515 !important;
+  olor:{GOLD_SOFT} !important;
   fill:{GOLD} !important;
 }}
 
@@ -306,10 +308,12 @@ input::placeholder, textarea::placeholder {{
 }}
 
 .stRadio label, .stRadio div[role="radio"] {{
+  background:#151515 !important;
   color:{GOLD_SOFT} !important;
 }}
 
 .stRadio div[role="radio"] input[type="radio"] {{
+  background:#151515 !important;
   accent-color: {GOLD} !important;
 }}
 
