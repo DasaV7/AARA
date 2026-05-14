@@ -87,9 +87,9 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .block-container {{
-  padding-top: 0.5rem;
-  max-width: 900px;
-  animation: fadeIn 0.4s ease;
+    padding-top: 40px !important;   /* prevents banner clipping */
+    max-width: 900px !important;
+    animation: fadeIn 0.4s ease;
 }}
 
 @keyframes fadeIn {{
@@ -327,10 +327,6 @@ input::placeholder, textarea::placeholder {{
   border:1px solid {GOLD} !important;
 }}
 
-.block-container {{
-    padding-top: 40px !important;
-}}
-
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -367,12 +363,17 @@ def render_header():
 
     with col2:
         if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, width=220)  # bigger logo
+            st.image(LOGO_PATH, width=200)
+        else:
+            st.markdown(
+                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>",
+                unsafe_allow_html=True
+            )
 
         st.markdown(
             f"""
-            <div style="text-align:center; margin-top:4px;">
-                <div style="font-size:2.0rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
+            <div style="text-align:center; margin-top:6px;">
+                <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
                     AARA Dance Studio
                 </div>
                 <div style="font-size:0.95rem; color:{GOLD_SOFT};">
