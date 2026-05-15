@@ -1,6 +1,6 @@
-# ADS_app.py - B03 (B00 baseline + B01 fixes preserved; B02 fixes + B03 update: robust client-side navigation so page links work)
+# ADS_app.py - B04 (B00 baseline + B01 fixes preserved; B02/B03 fixes + B04 update: use components.html for slideshow and JS injection so scripts render correctly; reliable client-side navigation)
 # Baseline: B00 theme + B01 fixes (always preserved)
-# Version: B03
+# Version: B04
 
 import streamlit as st
 import pandas as pd
@@ -11,6 +11,7 @@ from datetime import datetime, date
 from PIL import Image
 import io
 import base64
+import streamlit.components.v1 as components
 
 # Optional dependency
 try:
@@ -512,7 +513,7 @@ def render_home():
             slides_html.append(f'<div class="slide {active}" style="{style}"></div>')
 
         slides_block = "\n".join(slides_html)
-        # Use onclick navigation to ensure query param updates and page routing works across environments
+        # Use components.html to ensure script tags execute and are not shown as text
         slideshow_html = f"""
         <div class="section">
           <div class="slideshow" id="slideshow">
@@ -520,9 +521,9 @@ def render_home():
             <div class="slide-overlay">Studio Moments</div>
           </div>
           <div style="text-align:center; margin-top:8px;">
-            <a class="btn-primary" href="#" onclick="window.location.search='?page=Register';return false;">Register Now</a>
+            <a class="btn-primary" href="?page=Register">Register Now</a>
             &nbsp;&nbsp;
-            <a class="btn-secondary" href="#" onclick="window.location.search='?page=Classes';return false;">View Classes</a>
+            <a class="btn-secondary" href="?page=Classes">View Classes</a>
           </div>
         </div>
 
@@ -546,7 +547,8 @@ def render_home():
         }})();
         </script>
         """
-        st.markdown(slideshow_html, unsafe_allow_html=True)
+        # Render via components.html so the <script> runs and is not printed as text
+        components.html(slideshow_html, height=420, scrolling=False)
 
     render_qr_section()
 
@@ -593,7 +595,13 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="#" onclick="window.location.search=\'?page=Register\';return false;">Register Now</a></div>', unsafe_allow_html=True)
+    # Use a components.html anchor to ensure navigation works in all environments
+    nav_html = """
+    <div style="text-align:center; margin-top:8px;">
+      <a class="btn-primary" href="?page=Register">Register Now</a>
+    </div>
+    """
+    components.html(nav_html, height=60, scrolling=False)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
@@ -802,8 +810,9 @@ def render_register():
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
 
-            # Client-side highlight + shake animation via JS
+            # Client-side highlight + shake animation via components.html so JS executes
             js = f"""
+            <div id="validation-js"></div>
             <script>
             (function() {{
               try {{
@@ -827,7 +836,7 @@ def render_register():
             }})();
             </script>
             """
-            st.markdown(js, unsafe_allow_html=True)
+            components.html(js, height=0, scrolling=False)
         else:
             record = {
                 "timestamp": datetime.now().isoformat(),
@@ -880,19 +889,17 @@ reg = "active" if page == "Register" else ""
 about = "active" if page == "About" else ""
 admin = "active" if page == "Admin" else ""
 
-# Use onclick navigation to reliably update query params and trigger routing
-st.markdown(
-    f"""
-    <div class="bottom-nav">
-      <a class="{home}" href="#" onclick="window.location.search='?page=Home';return false;"><span>🏠</span>Home</a>
-      <a class="{classes}" href="#" onclick="window.location.search='?page=Classes';return false;"><span>📚</span>Classes</a>
-      <a class="{reg}" href="#" onclick="window.location.search='?page=Register';return false;"><span>📝</span>Register</a>
-      <a class="{about}" href="#" onclick="window.location.search='?page=About';return false;"><span>ℹ️</span>About</a>
-      <a class="{admin}" href="#" onclick="window.location.search='?page=Admin';return false;"><span>🔒</span>Admin</a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# Use components.html for bottom nav anchors so navigation works reliably
+nav_html = f"""
+<div class="bottom-nav">
+  <a class="{home}" href="?page=Home"><span>🏠</span>Home</a>
+  <a class="{classes}" href="?page=Classes"><span>📚</span>Classes</a>
+  <a class="{reg}" href="?page=Register"><span>📝</span>Register</a>
+  <a class="{about}" href="?page=About"><span>ℹ️</span>About</a>
+  <a class="{admin}" href="?page=Admin"><span>🔒</span>Admin</a>
+</div>
+"""
+components.html(nav_html, height=72, scrolling=False)
 
 # FOOTER
 st.markdown('<div class="footer">@ AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
