@@ -1,6 +1,5 @@
-# ADS_app.py - RESTORED (B00 baseline + B01 fixes preserved)
-# Restored from original PDF baseline (cleaned, syntax-fixed, reliable navigation)
-# Version: RESTORE_FROM_PDF
+# ADS_app.py - B09
+# B00/B01 theme preserved + working navigation via Streamlit buttons (no query-param issues)
 
 import streamlit as st
 import pandas as pd
@@ -12,7 +11,6 @@ from PIL import Image
 import io
 import base64
 
-# Optional dependency
 try:
     import qrcode
 except Exception:
@@ -33,37 +31,15 @@ REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
-# SESSION STATE defaults
+# SESSION STATE
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-# Robust query-params retrieval (works across Streamlit versions)
-params = {}
-_get_qs = getattr(st, "experimental_get_query_params", None)
-if callable(_get_qs):
-    try:
-        params = _get_qs() or {}
-    except Exception:
-        params = {}
-else:
-    _qp = getattr(st, "query_params", None)
-    if isinstance(_qp, dict):
-        params = _qp
-    else:
-        params = {}
-
-if "page" in params:
-    p = params.get("page")
-    if isinstance(p, list) and p:
-        st.session_state.page = p[0]
-    elif isinstance(p, str):
-        st.session_state.page = p
-
 page = st.session_state.page
 
-# THEME COLORS (flyer style baseline B00)
+# THEME COLORS
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
 GOLD = "#d4af37"
@@ -73,16 +49,13 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# Helper to convert image to base64 for inline embedding
-def _img_to_base64(path):
+def _img_to_base64(path: str) -> str:
     try:
         with open(path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode("utf-8")
+            return base64.b64encode(f.read()).decode("utf-8")
     except Exception:
         return ""
 
-# CSS - Flyer theme + animations + form field styling + slideshow
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -100,8 +73,8 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .block-container {{
-  padding-top: 40px !important;
-  max-width: 900px !important;
+  padding-top: 0.5rem;
+  max-width: 900px;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -116,6 +89,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   border-radius:14px;
   border:1px solid {BORDER};
   margin-bottom:14px;
+  box-shadow:0 0 18px rgba(0,0,0,0.6);
 }}
 
 .title {{
@@ -139,79 +113,44 @@ html, body, [data-testid="stAppViewContainer"] {{
   border-radius:999px;
   text-decoration:none;
   font-weight:600;
-  transition: background 0.2s ease;
+  border:none;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }}
 .btn-primary:hover {{
   background:{GOLD_SOFT};
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(0,0,0,0.6);
 }}
 
 .btn-secondary {{
   display:inline-block;
   padding:12px 22px;
   background:transparent;
-  color:{GOLD} !important;
+  color:{GOLD_SOFT} !important;
   border-radius:999px;
   border:1px solid {GOLD};
   text-decoration:none;
   font-weight:500;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }}
 .btn-secondary:hover {{
-  background: rgba(212,175,55,0.06);
-}}
-
-.whatsapp-btn {{
-  position:fixed;
-  top:70px;
-  right:20px;
-  background:#25D366;
-  color:white;
-  padding:14px 16px;
-  border-radius:50%;
-  font-size:22px;
-  text-decoration:none;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  z-index:9999;
-}}
-
-.bottom-nav {{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  background:{CARD_BG};
-  border-top:1px solid {BORDER};
-  display:flex;
-  justify-content:space-around;
-  padding:10px 0;
-  z-index:999;
-}}
-
-.bottom-nav a {{
-  text-decoration:none;
-  font-size:0.85rem;
-  color:{TEXT};
-  text-align:center;
-}}
-.bottom-nav a span {{
-  display:block;
-  font-size:1.2rem;
-}}
-.bottom-nav a.active {{
-  color:{GOLD};
+  background:{GOLD};
+  color:{BG_TOP} !important;
+  transform:translateY(-1px);
 }}
 
 .class-card {{
-  padding:10px;
-  border-radius:10px;
-  background:rgba(15,23,42,0.03);
-  border:1px solid {BORDER};
-  margin-bottom:8px;
+  padding:12px;
+  border-radius:12px;
+  background:#151515;
+  border:1px solid {GOLD};
+  margin-bottom:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.7);
 }}
 
 .required-label::after {{
   content: " *";
-  color: #ff4d4d;
+  color: #e11d48;
   font-weight: 700;
 }}
 
@@ -221,34 +160,78 @@ html, body, [data-testid="stAppViewContainer"] {{
   30%, 50%, 70% {{ transform: translateX(-4px); }}
   40%, 60% {{ transform: translateX(4px); }}
 }}
-
 .shake {{
   animation: shake 0.35s ease-in-out;
 }}
 
 .footer {{
   text-align:center;
-  color:#9ca3af;
+  color:{GOLD};
   font-size:0.8rem;
   margin-top:40px;
   margin-bottom:60px;
 }}
 
-.reg-card {{
-  border-radius:14px;
-  border:1px solid {BORDER};
-  background:{CARD_BG};
-  padding:14px 16px;
-  margin-bottom:12px;
-  box-shadow:0 4px 10px rgba(15,23,42,0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  cursor:pointer;
+.bottom-nav-wrapper {{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#050505;
+  border-top:1px solid {BORDER};
+  padding:6px 0 4px 0;
+  z-index:999;
 }}
 
+.bottom-nav-btn > button {{
+  width:100%;
+  border-radius:10px;
+  border:none;
+  background:transparent;
+  color:{GOLD_SOFT};
+  font-size:0.8rem;
+  padding:4px 0 2px 0;
+}}
+.bottom-nav-btn-active > button {{
+  background:rgba(212,175,55,0.12);
+  color:{GOLD};
+}}
+
+.bottom-nav-icon {{
+  display:block;
+  font-size:1.2rem;
+  line-height:1.2;
+}}
+
+.whatsapp-btn {{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:#25D366;
+  color:white;
+  padding:14px 16px;
+  border-radius:50%;
+  font-size:22px;
+  text-decoration:none;
+  box-shadow:0 4px 12px rgba(0,0,0,0.8);
+  z-index:9999;
+}}
+
+/* Registration vertical cards */
+.reg-card {{
+  border-radius:14px;
+  border:1px solid {GOLD};
+  background:#151515;
+  padding:14px 16px;
+  margin-bottom:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.8);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  cursor:pointer;
+}}
 .reg-card:hover {{
-  transform: translateY(-4px);
-  box-shadow:0 10px 24px rgba(15,23,42,0.14);
-  border-color:{GOLD};
+  transform: translateY(-6px);
+  box-shadow:0 14px 32px rgba(0,0,0,0.9);
+  border-color:{GOLD_SOFT};
 }}
 
 .reg-card-header {{
@@ -257,115 +240,64 @@ html, body, [data-testid="stAppViewContainer"] {{
   align-items:center;
   font-weight:600;
   font-size:1rem;
-  color:{TEXT};
+  color:{GOLD_SOFT};
 }}
 .reg-card-sub {{
   font-size:0.9rem;
-  color:#6b7280;
+  color:#d1c7a5;
   margin-top:4px;
 }}
 
-/* === DARK-GOLD FORM THEME FIX === */
+/* Form fields & labels in dark theme */
 label {{
   color:{GOLD_SOFT} !important;
 }}
-
 input, textarea, select {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
-  border:1px solid {GOLD} !important;
-  border-radius:8px !important;
+  border:1px solid {GOLD};
+  border-radius:8px;
 }}
-
-input::placeholder, textarea::placeholder {{
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > select,
+.stDateInput > div > div > input {{
+  background:#151515 !important;
   color:{GOLD_SOFT} !important;
-  opacity:0.85 !important;
+  border:1px solid {GOLD};
+}}
+.stRadio > div label, .stCheckbox > div label {{
+  color:{GOLD_SOFT} !important;
 }}
 
-/* Selectbox + Dropdown */
-div[data-baseweb="select"] {{
-  background-color: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-  border-radius: 8px !important;
-}}
-div[data-baseweb="select"] * {{
-  color: {GOLD_SOFT} !important;
-}}
-div[data-baseweb="select"] svg {{
-  fill: {GOLD} !important;
-}}
-
-/* Multiselect */
-.stMultiSelect div[data-baseweb="select"] {{
-  background-color: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-.stMultiSelect div[data-baseweb="select"] * {{
-  color: {GOLD_SOFT} !important;
-}}
-div[data-baseweb="tag"] {{
-  background-color: {RED} !important;
-  color: {GOLD_SOFT} !important;
-  border-radius: 6px !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-/* Radio buttons */
-.stRadio label {{
-  color: {GOLD_SOFT} !important;
-  opacity: 1 !important;
-}}
-.stRadio div[role="radio"] {{
-  background-color: #151515 !important;
-  border: 2px solid {GOLD} !important;
-  border-radius: 50% !important;
-}}
-.stRadio div[role="radio"] input[type="radio"] {{
-  accent-color: {GOLD} !important;
-}}
-
-/* Date input */
-.stDateInput input {{
-  background-color: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-/* Slideshow container */
-.slideshow {{
+/* Slideshow banner */
+.slideshow-container {{
   position: relative;
   width: 100%;
-  max-width: 900px;
-  height: 360px;
+  max-width: 820px;
+  height: 320px;
+  margin: 0 auto;
   overflow: hidden;
-  border-radius: 12px;
-  border:1px solid {BORDER};
-  margin: 0 auto 12px auto;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+  border: 1px solid {GOLD};
 }}
-.slide {{
+.slide-fade {{
   position: absolute;
   width: 100%;
   height: 100%;
+  object-fit: cover;
   opacity: 0;
-  transition: opacity 1s ease;
-  background-size: cover;
-  background-position: center;
+  animation: fadeSlide 24s infinite;
 }}
-.slide.active {{
-  opacity: 1;
+@keyframes fadeSlide {{
+  0% {{ opacity: 0; }}
+  5% {{ opacity: 1; }}
+  20% {{ opacity: 1; }}
+  25% {{ opacity: 0; }}
+  100% {{ opacity: 0; }}
 }}
-.slide-overlay {{
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  color: {GOLD_SOFT};
-  background: rgba(0,0,0,0.35);
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(212,175,55,0.08);
-}}
+
 .logo-glow {{
   display:inline-block;
   padding:12px;
@@ -375,10 +307,8 @@ div[data-baseweb="tag"] {{
 }}
 </style>
 """
-
 st.markdown(CSS, unsafe_allow_html=True)
 
-# UTILITIES
 def log_visit():
     df = pd.DataFrame([{"timestamp": datetime.now().isoformat()}])
     if os.path.exists(VISIT_FILE):
@@ -386,24 +316,27 @@ def log_visit():
     else:
         df.to_csv(VISIT_FILE, index=False)
 
-def save_registration(record):
+def save_registration(record: dict):
     df = pd.DataFrame([record])
     if os.path.exists(REG_FILE):
         df.to_csv(REG_FILE, mode="a", header=False, index=False)
     else:
         df.to_csv(REG_FILE, index=False)
 
-def read_csv(path):
+def read_csv(path: str) -> pd.DataFrame:
     if os.path.exists(path):
         return pd.read_csv(path)
     return pd.DataFrame()
 
 log_visit()
 
-# HEADER - use st.image for logo (centered, enlarged, glow)
+def navigate_to(page_name: str):
+    st.session_state.page = page_name
+    st.experimental_rerun()
+
 def render_header():
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    col = st.container()
+    with col:
         if os.path.exists(LOGO_PATH):
             b64 = _img_to_base64(LOGO_PATH)
             if b64:
@@ -425,34 +358,31 @@ def render_header():
                 unsafe_allow_html=True,
             )
 
-    st.markdown(
-        f"""
-        <div style="text-align:center; margin-top:6px;">
-          <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
-            AARA Dance Studio
-          </div>
-          <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-            Where Passion Meets Performance
-          </div>
-          <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-            · Fate · Rockwall · Dallas, TX
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin-top:4px;">
+              <div style="font-size:1.9rem; font-weight:700; margin-top:4px; color:{GOLD}; font-family:'Playfair Display', serif;">
+                AARA Dance Studio
+              </div>
+              <div style="font-size:0.95rem; color:{GOLD_SOFT};">
+                Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-# WHATSAPP BUTTON (Top Right)
+render_header()
+
 st.markdown(
-    f"""
-    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank" title="Chat on WhatsApp">
+    """
+    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">
       💬
     </a>
     """,
     unsafe_allow_html=True,
 )
 
-# QR CODE SECTION
 def render_qr_section():
     if qrcode is None:
         return
@@ -466,19 +396,47 @@ def render_qr_section():
     except Exception:
         pass
 
-# HOME PAGE - Hero + slideshow (st.image list fallback)
 def render_home():
-    render_header()
+    st.markdown(
+        f"""
+        <div style="
+          background: {RED};
+          color:{GOLD_SOFT};
+          text-align:center;
+          padding:10px;
+          border-radius:10px;
+          margin-bottom:14px;
+          box-shadow:0 8px 20px rgba(0,0,0,0.8);
+          font-weight:600;
+        ">
+          EARLY BIRD OFFER* - First 10 Registrations Only $50/month for 3 Months!<br>
+          <span style="font-size:0.9rem; font-weight:400;">Limited spots · Register now to lock in your rate</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.markdown(
         f"""
         <div class="section" style="display:flex; flex-direction:column; gap:18px;">
           <div>
-            <div style="font-size:2rem; font-weight:800; color:{GOLD}; margin-bottom:6px;">
+            <div style="font-size:2.3rem; font-weight:800; color:{GOLD}; margin-bottom:6px; font-family:'Playfair Display', serif;">
               Dance. Express. Shine.
             </div>
-            <div style="font-size:1.05rem; color:#4b5563; max-width:720px;">
+            <div style="font-size:1.05rem; color:{GOLD_SOFT}; max-width:540px;">
               AARA Dance Studio brings Bollywood, Kollywood, Tollywood, Kuthu, Hip Hop and more
-              to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults to find their groove.
+              to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults
+              to find their groove.
+            </div>
+            <div style="margin-top:12px; font-size:0.95rem; color:{GOLD_SOFT};">
+              Dance Instructor: <b>Mrs. Rekha Mahendran &amp; Mahendran Ramachandran</b><br>
+              315 Spirehaven Dr, Rockwall, TX 75087
+            </div>
+            <div style="margin-top:14px;">
+              <!-- visual buttons; real navigation via Streamlit buttons below -->
+              <span class="btn-primary">Register Now</span>
+              &nbsp;&nbsp;
+              <span class="btn-secondary">View Classes</span>
             </div>
           </div>
         </div>
@@ -486,109 +444,93 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow: gather slide images named slide1.jpg ... slide5.jpg
-    slide_paths = []
-    for i in range(1, 6):
-        for ext in ("jpg", "jpeg", "png"):
-            p = f"slide{i}.{ext}"
-            if os.path.exists(p):
-                slide_paths.append(p)
-                break
-
-    # If fewer than 4 slides found, also include any slide*.jpg/png files
-    if len(slide_paths) < 4:
-        extras = sorted(glob.glob("slide*.jpg") + glob.glob("slide*.jpeg") + glob.glob("slide*.png"))
-        for p in extras:
-            if p not in slide_paths:
-                slide_paths.append(p)
-            if len(slide_paths) >= 5:
-                break
-
-    valid_images = []
-    for path in slide_paths:
-        try:
-            img = Image.open(path)
-            img.load()
-            valid_images.append(img)
-        except Exception:
-            continue
+    c1, c2, c3 = st.columns([1, 1, 1])
+    with c1:
+        if st.button("Register Now", key="hero_register"):
+            navigate_to("Register")
+    with c2:
+        if st.button("View Classes", key="hero_classes"):
+            navigate_to("Classes")
 
     st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown("### Studio Moments", unsafe_allow_html=True)
-
-    if valid_images:
-        # Use st.image with a list to show slideshow-like gallery (keeps layout consistent)
-        st.image(valid_images, width=700)
-    else:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
-
     st.markdown(
-        f"""
-        <div style="margin-top:10px;">
-          <a class="btn-primary" href="/?page=Register">Register Now</a>
-          &nbsp;&nbsp;
-          <a class="btn-primary" href="/?page=Classes">View Classes</a>
-        </div>
-        """,
+        f'<div class="title" style="font-size:1.4rem;">Studio Moments</div>',
         unsafe_allow_html=True,
     )
-    st.markdown('</div>', unsafe_allow_html=True)
 
+    images = sorted(glob.glob("slide*.jpg")) + sorted(glob.glob("slide*.jpeg")) + sorted(glob.glob("slide*.png"))
+    images = images[:5]
+
+    if images:
+        slides_html = []
+        for idx, path in enumerate(images):
+            delay = idx * 6
+            slides_html.append(
+                f'<img src="{os.path.basename(path)}" class="slide-fade" style="animation-delay:{delay}s;" />'
+            )
+        slides_html = "\n".join(slides_html)
+        st.markdown(
+            f"""
+            <div class="slideshow-container">
+              {slides_html}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.info("Upload slide1.jpeg, slide2.jpeg, slide3.jpeg (etc.) in the root directory for a slideshow.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
     render_qr_section()
 
-# CLASSES PAGE
 def render_classes():
-    render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Programs & Fees</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Choose the program that fits your dancer best.</div>', unsafe_allow_html=True)
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
-          <b>Tiny Stars (Ages 5-8)</b><br>
-          Beginner / Intermediate<br>
-          Wed & Fri · 6:30-7:30 PM<br>
-          4 classes: $60 · 8 classes: $100
+          <div style="color:{GOLD}; font-weight:700;">Tiny Stars (Ages 5-8)</div>
+          <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Wed &amp; Fri · 6:30-7:30 PM</div>
+          <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $60 · 8 classes: $100</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
-          <b>Shining Stars (Ages 9+)</b><br>
-          Beginner / Intermediate<br>
-          Tue · 7-8 PM<br>
-          4 classes: $60 · 8 classes: $100
+          <div style="color:{GOLD}; font-weight:700;">Shining Stars (Ages 9+)</div>
+          <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Tue · 7-8 PM</div>
+          <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $60 · 8 classes: $100</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
-          <b>Dream Chasers (Ladies 18+)</b><br>
-          Beginner / Intermediate<br>
-          Thu 6:30-7:30 PM · Sat 10:30-11:30 AM<br>
-          4 classes: $50 · 8 classes: $80
+          <div style="color:{GOLD}; font-weight:700;">Dream Chasers (Ladies 18+)</div>
+          <div style="color:{GOLD_SOFT};">Beginner / Intermediate · Thu 6:30-7:30 PM · Sat 10:30-11:30 AM</div>
+          <div style="margin-top:6px; color:{GOLD_SOFT};">4 classes: $50 · 8 classes: $80</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
+    if st.button("Register Now", key="classes_register"):
+        navigate_to("Register")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ABOUT PAGE
 def render_about():
-    render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div style="text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:10px; color:{GOLD};">
+        <div style="text-align:center; font-size:1.9rem; font-weight:800; margin-bottom:10px; color:{GOLD}; font-family:'Playfair Display', serif;">
           Find your Groove!
         </div>
         """,
@@ -601,8 +543,8 @@ def render_about():
         st.info("Instructor photo placeholder (upload instructor.jpg in root directory).")
 
     st.markdown(
-        """
-        <ul style="font-size:1rem; line-height:1.6; margin-top:10px; color: #f5e8c7;">
+        f"""
+        <ul style="font-size:1rem; line-height:1.6; margin-top:10px; color:{GOLD_SOFT};">
           <li><b>Bollywood</b> - A fun and energetic dance style inspired by Hindi movie songs and Indian cinema.</li>
           <li><b>Kollywood</b> - A vibrant dance form based on Tamil movie music, known for expressive moves and powerful energy.</li>
           <li><b>Tollywood</b> - A lively dance style inspired by Telugu film songs, featuring fast beats and dynamic choreography.</li>
@@ -616,41 +558,52 @@ def render_about():
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ADMIN PAGE
 def render_admin():
-    render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown('<div class="title">Admin</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Restricted access. View registrations and site visits.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="title">Admin Dashboard</div>', unsafe_allow_html=True)
+
+    ADMIN_PASS = os.environ.get("ADMIN_PASS", "aara-admin-2026")
 
     if not st.session_state.admin_authenticated:
-        pwd = st.text_input("Enter admin password", type="password", key="admin_pwd")
-        if st.button("Authenticate"):
-            # Simple password check - in production, replace with secure auth
-            if pwd == "adminpass":
+        pwd = st.text_input("Enter admin password", type="password")
+        if st.button("Login"):
+            if pwd == ADMIN_PASS:
                 st.session_state.admin_authenticated = True
-                st.success("Authenticated.")
+                st.experimental_rerun()
             else:
                 st.error("Incorrect password.")
     else:
+        st.success("Admin authenticated.")
+
         regs = read_csv(REG_FILE)
         visits = read_csv(VISIT_FILE)
-        st.markdown("**Registrations**")
-        st.dataframe(regs)
-        if not regs.empty:
-            csv = regs.to_csv(index=False).encode("utf-8")
-            st.download_button("Download registrations CSV", data=csv, file_name="registrations.csv", mime="text/csv")
-        st.markdown("**Site Visits**")
-        st.dataframe(visits)
-        if not visits.empty:
-            csv2 = visits.to_csv(index=False).encode("utf-8")
-            st.download_button("Download visits CSV", data=csv2, file_name="site_visits.csv", mime="text/csv")
+
+        st.subheader("Overview")
+        st.write(f"Total registrations: **{len(regs)}**")
+        st.write(f"Total site visits: **{len(visits)}**")
+
+        st.subheader("Registrations")
+        if regs.empty:
+            st.info("No registrations yet.")
+        else:
+            st.dataframe(regs)
+            st.download_button("Download Registrations CSV", regs.to_csv(index=False), "registrations.csv")
+
+        st.subheader("Site Visits")
+        if visits.empty:
+            st.info("No visits yet.")
+        else:
+            st.dataframe(visits)
+            st.download_button("Download Visits CSV", visits.to_csv(index=False), "site_visits.csv")
+
+        st.markdown("---")
+        if st.button("Logout"):
+            st.session_state.admin_authenticated = False
+            st.experimental_rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - Vertical Cards with Hover + Form
 def render_register():
-    render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Fill in the details below to secure your spot.</div>', unsafe_allow_html=True)
@@ -659,11 +612,10 @@ def render_register():
         "student_name": "_req_student_name",
         "dob": "_req_dob",
         "pref_time": "_req_pref_time",
-        "signature": "_req_signature"
+        "signature": "_req_signature",
     }
 
     with st.form("reg_form", clear_on_submit=False):
-        # Card 1 - Student Info
         st.markdown(
             """
             <div class="reg-card">
@@ -678,23 +630,11 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
-        # Render labels in gold and inputs with dark background
-        student_name = st.text_input("Student Name", key="student_name",
-                                     placeholder=required_placeholders["student_name"],
-                                     label_visibility="visible")
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
+        student_name = st.text_input("Student Name", key="student_name", placeholder=required_placeholders["student_name"])
+        dob = st.text_input("Date of Birth (Age)", key="dob", placeholder=required_placeholders["dob"])
+        gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender")
+        school = st.text_input("School Name (optional)", key="school")
 
-        dob = st.text_input("Date of Birth (Age)", key="dob",
-                            placeholder=required_placeholders["dob"], label_visibility="visible")
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
-
-        gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender", label_visibility="visible")
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
-
-        school = st.text_input("School Name (optional)", key="school", label_visibility="visible")
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
-
-        # Card 2 - Class Details
         st.markdown(
             """
             <div class="reg-card">
@@ -709,23 +649,13 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
-
-        enrollment = st.selectbox(
-            "Enrollment Type",
-            ["", "Regular ($50/month)", "Drop-in ($15/session)"],
-            key="enroll"
-        )
+        enrollment = st.selectbox("Enrollment Type", ["", "Regular ($50/month)", "Drop-in ($15/session)"], key="enroll")
         mode = st.radio("Mode", ["In-Person", "Online"], key="mode")
-        workshops = st.multiselect(
-            "Workshops",
-            ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"],
-            key="workshops"
-        )
+        workshops = st.multiselect("Workshops", ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"], key="workshops")
         level = st.selectbox("Level", ["", "Beginner", "Intermediate", "Advanced"], key="level")
         pref_time = st.text_input("Preferred Days/Time", key="pref_time", placeholder=required_placeholders["pref_time"])
         experience = st.text_area("Previous Experience", key="experience")
 
-        # Card 3 - Parent & Emergency Contact
         st.markdown(
             """
             <div class="reg-card">
@@ -748,7 +678,6 @@ def render_register():
         em_rel = st.text_input("Relationship", key="em_rel")
         em_phone = st.text_input("Emergency Phone", key="em_phone")
 
-        # Card 4 - Medical & Consent
         st.markdown(
             """
             <div class="reg-card">
@@ -768,10 +697,8 @@ def render_register():
         signature = st.text_input("Parent/Guardian Signature", key="signature", placeholder=required_placeholders["signature"])
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
-        # Single submit button labeled "Submit Form"
         submitted = st.form_submit_button("Submit Form")
 
-    # Validation and saving
     if submitted:
         missing = []
         missing_placeholders = []
@@ -803,8 +730,6 @@ def render_register():
 
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
-
-            # Client-side highlight + shake animation via JS (keeps navigation intact)
             js = f"""
             <script>
             (function() {{
@@ -814,7 +739,7 @@ def render_register():
                   const el = document.querySelector('[placeholder="'+p+'"]');
                   if (el) {{
                     el.style.borderColor = "#e11d48";
-                    el.style.boxShadow = "0 0 0 3px rgba(225,29,72,0.12)";
+                    el.style.boxShadow = "0 0 0 3px rgba(225,29,72,0.4)";
                   }}
                 }});
                 const sections = document.querySelectorAll('.section');
@@ -854,14 +779,14 @@ def render_register():
                 "medical": medical,
                 "consent": consent,
                 "signature": signature,
-                "sig_date": sig_date.isoformat()
+                "sig_date": sig_date.isoformat(),
             }
             save_registration(record)
             st.success("Registration submitted successfully!")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# PAGE ROUTER
+# ROUTER
 if page == "Home":
     render_home()
 elif page == "Classes":
@@ -875,26 +800,48 @@ elif page == "Admin":
 else:
     render_home()
 
-# BOTTOM NAV
-home = "active" if page == "Home" else ""
-classes = "active" if page == "Classes" else ""
-reg = "active" if page == "Register" else ""
-about = "active" if page == "About" else ""
-admin = "active" if page == "Admin" else ""
+# BOTTOM NAV (Streamlit buttons, visually like original icons)
+st.markdown('<div class="bottom-nav-wrapper">', unsafe_allow_html=True)
+c_home, c_classes, c_reg, c_about, c_admin = st.columns(5)
 
-# Use plain anchors with query params so navigation is top-level and consistent across hosts
+with c_home:
+    cls = "bottom-nav-btn-active" if page == "Home" else "bottom-nav-btn"
+    st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+    if st.button("🏠\nHome", key="nav_home"):
+        navigate_to("Home")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with c_classes:
+    cls = "bottom-nav-btn-active" if page == "Classes" else "bottom-nav-btn"
+    st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+    if st.button("📚\nClasses", key="nav_classes"):
+        navigate_to("Classes")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with c_reg:
+    cls = "bottom-nav-btn-active" if page == "Register" else "bottom-nav-btn"
+    st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+    if st.button("📝\nRegister", key="nav_register"):
+        navigate_to("Register")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with c_about:
+    cls = "bottom-nav-btn-active" if page == "About" else "bottom-nav-btn"
+    st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+    if st.button("ℹ️\nAbout", key="nav_about"):
+        navigate_to("About")
+    st.markmarkdown("</div>", unsafe_allow_html=True)
+
+with c_admin:
+    cls = "bottom-nav-btn-active" if page == "Admin" else "bottom-nav-btn"
+    st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+    if st.button("🔒\nAdmin", key="nav_admin"):
+        navigate_to("Admin")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 st.markdown(
-    f"""
-    <div class="bottom-nav">
-      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
-      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
-      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
-      <a class="{about}" href="/?page=About"><span>ℹ️</span>About</a>
-      <a class="{admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
-    </div>
-    """,
+    '<div class="footer">@ AARA Dance Studio · ADS · Dallas · Fate, TX</div>',
     unsafe_allow_html=True,
 )
-
-# FOOTER
-st.markdown('<div class="footer">@ AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
