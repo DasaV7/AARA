@@ -1,4 +1,3 @@
-```python
 # ADS_app.py - B02 (B00 baseline + B01 fixes preserved; B02 updates: cleaned syntax, slideshow autoplay, single submit button label "Submit Form", robust validation, admin CSV export)
 # Baseline: B00 theme + B01 fixes (always preserved)
 # Version: B02
