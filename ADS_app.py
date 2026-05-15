@@ -365,7 +365,7 @@ div[data-baseweb="tag"] {{
   animation-name: slidefade;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-}
+}}
 @keyframes slidefade {{
   0%   {{ opacity: 0; }}
   8%   {{ opacity: 1; }}
