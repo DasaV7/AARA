@@ -609,50 +609,31 @@ def render_about():
 # ---------------------------------------------------------
 # ADMIN PAGE
 # ---------------------------------------------------------
-def render_admin():
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown('<div class="title">Admin Dashboard</div>', unsafe_allow_html=True)
+def render_header():
+    col1, col2, col3 = st.columns([1, 2, 1])
 
-    ADMIN_PASS = os.environ.get("ADMIN_PASS", "aara-admin-2026")
+    with col2:
+        try:
+            st.image("logo.png", width=200)
+        except:
+            st.markdown(
+                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>",
+                unsafe_allow_html=True
+            )
 
-    if not st.session_state.admin_authenticated:
-        pwd = st.text_input("Enter admin password", type="password")
-        if st.button("Login"):
-            if pwd == ADMIN_PASS:
-                st.session_state.admin_authenticated = True
-                st.rerun()
-            else:
-                st.error("Incorrect password.")
-    else:
-        st.success("Admin authenticated.")
-
-        regs = read_csv(REG_FILE)
-        visits = read_csv(VISIT_FILE)
-
-        st.subheader("Overview")
-        st.write(f"Total registrations: **{len(regs)}**")
-        st.write(f"Total site visits: **{len(visits)}**")
-
-        st.subheader("Registrations")
-        if regs.empty:
-            st.info("No registrations yet.")
-        else:
-            st.dataframe(regs)
-            st.download_button("Download Registrations CSV", regs.to_csv(index=False), "registrations.csv")
-
-        st.subheader("Site Visits")
-        if visits.empty:
-            st.info("No visits yet.")
-        else:
-            st.dataframe(visits)
-            st.download_button("Download Visits CSV", visits.to_csv(index=False), "site_visits.csv")
-
-        st.markdown("---")
-        if st.button("Logout"):
-            st.session_state.admin_authenticated = False
-            st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin-top:6px;">
+                <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
+                    AARA Dance Studio
+                </div>
+                <div style="font-size:0.95rem; color:{GOLD_SOFT};">
+                    Where Passion Meets Performance · Fate · Rockwall · Dallas, TX
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 # ---------------------------------------------------------
 # REGISTRATION PAGE — Vertical Cards with Hover + Form
