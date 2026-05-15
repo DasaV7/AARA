@@ -1,5 +1,8 @@
-# ADS_app.py - B06 (B00 baseline + B01 fixes preserved; B05 fixes + B06 update: reliable Streamlit-button navigation)
-# Version: B06
+# ADS_app.py - B07 (B00 baseline + B01 fixes preserved; B06 fixes + B07 update)
+# Fix: remove st.experimental_rerun from navigation helper to avoid AttributeError
+# Update: bottom nav visually matches HTML anchors while navigation uses Streamlit session + query params
+# Version: B07
+
 import streamlit as st
 import pandas as pd
 import os
@@ -31,7 +34,7 @@ REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
-# SESSION STATE
+# SESSION STATE defaults
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
@@ -190,6 +193,8 @@ html, body, [data-testid="stAppViewContainer"] {{
   font-size:0.85rem;
   color:{TEXT};
   text-align:center;
+  padding:6px 10px;
+  border-radius:8px;
 }}
 .bottom-nav a span {{
   display:block;
@@ -197,7 +202,9 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 .bottom-nav a.active {{
   color:{GOLD};
-}}
+  background: rgba(212,175,55,0.06);
+  border: 1px solid rgba(212,175,55,0.08);
+}
 
 .class-card {{
   padding:10px;
@@ -405,16 +412,20 @@ log_visit()
 
 # NAVIGATION helper using Streamlit API (reliable)
 def navigate_to(page_name: str):
+    """
+    Set the page in session state and update query params.
+    Do NOT call st.experimental_rerun here to avoid rerun-related AttributeError.
+    Streamlit will rerun automatically on button click; setting session_state.page ensures router picks it up.
+    """
+    try:
+        st.session_state.page = page_name
+    except Exception:
+        pass
     try:
         st.experimental_set_query_params(page=page_name)
     except Exception:
-        # fallback for older versions
-        try:
-            st.session_state.page = page_name
-        except Exception:
-            pass
-    # force rerun so router picks up new page
-    st.experimental_rerun()
+        # ignore if not available
+        pass
 
 # HEADER - enlarged centered logo with glow
 def render_header():
@@ -507,12 +518,13 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
-    # Hero CTA buttons as Streamlit buttons (reliable navigation)
-    cols = st.columns([1, 1, 1, 1, 1])
-    # place primary in col 1 and secondary in col 3 for spacing
-    if cols[1].button("Register Now"):
+
+    # Hero CTA buttons implemented as Streamlit buttons for reliable navigation,
+    # but visually we keep spacing so they appear like inline CTAs.
+    c1, c2, c3, c4, c5 = st.columns([1, 0.6, 0.6, 0.6, 1])
+    if c2.button("Register Now"):
         navigate_to("Register")
-    if cols[3].button("View Classes"):
+    if c3.button("View Classes"):
         navigate_to("Classes")
 
 # HOME PAGE - Hero + slideshow
@@ -598,7 +610,6 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    # Streamlit button for reliable navigation
     if st.button("Register Now", key="classes_register"):
         navigate_to("Register")
 
@@ -877,18 +888,27 @@ elif page == "Admin":
 else:
     render_home()
 
-# BOTTOM NAV - Streamlit buttons in columns for reliable navigation
-cols = st.columns(5)
-if cols[0].button("🏠 Home"):
-    navigate_to("Home")
-if cols[1].button("📚 Classes"):
-    navigate_to("Classes")
-if cols[2].button("📝 Register"):
-    navigate_to("Register")
-if cols[3].button("ℹ️ About"):
-    navigate_to("About")
-if cols[4].button("🔒 Admin"):
-    navigate_to("Admin")
+# BOTTOM NAV - visually HTML anchors (match look) while navigation is handled by query params/session
+# Anchors update the URL; the router reads query params at top of script.
+# This avoids nested iframes and keeps the visual style of anchors.
+active_home = "active" if page == "Home" else ""
+active_classes = "active" if page == "Classes" else ""
+active_register = "active" if page == "Register" else ""
+active_about = "active" if page == "About" else ""
+active_admin = "active" if page == "Admin" else ""
 
-# Footer
+st.markdown(
+    f"""
+    <div class="bottom-nav">
+      <a class="{active_home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{active_classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{active_register}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{active_about}" href="/?page=About"><span>ℹ️</span>About</a>
+      <a class="{active_admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# FOOTER
 st.markdown('<div class="footer">@ AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
