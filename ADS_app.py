@@ -1,7 +1,5 @@
-# ADS_app.py - B05 (B00 baseline + B01 fixes preserved; B05 updates: restore top-level navigation, enlarge centered logo, CSS-only autoplay slideshow with fade transitions, safe client-side placeholder highlighting + shake animation)
-# Baseline: B00 theme + B01 fixes (always preserved)
-# Version: B05
-
+# ADS_app.py - B06 (B00 baseline + B01 fixes preserved; B05 fixes + B06 update: reliable Streamlit-button navigation)
+# Version: B06
 import streamlit as st
 import pandas as pd
 import os
@@ -82,7 +80,7 @@ def _img_to_base64(path):
     except Exception:
         return ""
 
-# CSS - Flyer theme + animations + form field styling + slideshow (CSS-only slideshow)
+# CSS - Flyer theme + animations + form field styling + slideshow
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -333,9 +331,7 @@ div[data-baseweb="tag"] {{
   border: 1px solid {GOLD} !important;
 }}
 
-/* CSS-only slideshow: slides stacked and animated via keyframes.
-   Each .slide uses the same animation but with a negative delay so they cycle.
-*/
+/* CSS-only slideshow */
 .slideshow {{
   position: relative;
   width: 100%;
@@ -355,7 +351,7 @@ div[data-baseweb="tag"] {{
   animation-name: slidefade;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-}}
+}
 @keyframes slidefade {{
   0%   {{ opacity: 0; }}
   8%   {{ opacity: 1; }}
@@ -374,7 +370,6 @@ div[data-baseweb="tag"] {{
   border: 1px solid rgba(212,175,55,0.08);
   z-index: 6;
 }}
-/* Make logo image glow when used inline */
 .logo-glow {{
   display:inline-block;
   padding:12px;
@@ -384,7 +379,6 @@ div[data-baseweb="tag"] {{
 }}
 </style>
 """
-
 st.markdown(CSS, unsafe_allow_html=True)
 
 # UTILITIES
@@ -409,6 +403,19 @@ def read_csv(path):
 
 log_visit()
 
+# NAVIGATION helper using Streamlit API (reliable)
+def navigate_to(page_name: str):
+    try:
+        st.experimental_set_query_params(page=page_name)
+    except Exception:
+        # fallback for older versions
+        try:
+            st.session_state.page = page_name
+        except Exception:
+            pass
+    # force rerun so router picks up new page
+    st.experimental_rerun()
+
 # HEADER - enlarged centered logo with glow
 def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -416,7 +423,6 @@ def render_header():
         if os.path.exists(LOGO_PATH):
             b64 = _img_to_base64(LOGO_PATH)
             if b64:
-                # inline HTML to center and enlarge logo with glow
                 st.markdown(
                     f"""
                     <div style="text-align:center;">
@@ -473,16 +479,14 @@ def render_qr_section():
     except Exception:
         pass
 
-# Build CSS-only slideshow HTML block (no components, no iframe)
+# Build CSS-only slideshow HTML block
 def render_slideshow(slide_paths, per_slide_seconds=6):
-    # If no slides, show placeholder
     if not slide_paths:
         st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
         return
 
-    # Prepare slides HTML with base64 backgrounds and staggered animation delays.
     n = len(slide_paths)
-    total_duration = n * per_slide_seconds  # seconds
+    total_duration = n * per_slide_seconds
     slides_html = []
     for idx, path in enumerate(slide_paths):
         b64 = _img_to_base64(path)
@@ -490,8 +494,6 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
             bg = f"url('data:image/png;base64,{b64}')"
         else:
             bg = f"url('{path}')"
-        # Each slide uses the same animation but with a negative delay so they appear in sequence.
-        # Negative delay = -(idx * per_slide_seconds) ensures the first visible slide is idx=0.
         delay = -(idx * per_slide_seconds)
         slides_html.append(f'<div class="slide" style="background-image: {bg}; animation-duration: {total_duration}s; animation-delay: {delay}s;"></div>')
 
@@ -502,14 +504,16 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
         {slides_block}
         <div class="slide-overlay">Studio Moments</div>
       </div>
-      <div style="text-align:center; margin-top:8px;">
-        <a class="btn-primary" href="/?page=Register">Register Now</a>
-        &nbsp;&nbsp;
-        <a class="btn-secondary" href="/?page=Classes">View Classes</a>
-      </div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+    # Hero CTA buttons as Streamlit buttons (reliable navigation)
+    cols = st.columns([1, 1, 1, 1, 1])
+    # place primary in col 1 and secondary in col 3 for spacing
+    if cols[1].button("Register Now"):
+        navigate_to("Register")
+    if cols[3].button("View Classes"):
+        navigate_to("Classes")
 
 # HOME PAGE - Hero + slideshow
 def render_home():
@@ -540,7 +544,6 @@ def render_home():
                 slide_paths.append(p)
                 break
 
-    # fallback to any slide*.jpg/png if not enough named slides
     if len(slide_paths) < 4:
         extras = sorted(glob.glob("slide*.jpg") + glob.glob("slide*.jpeg") + glob.glob("slide*.png"))
         for p in extras:
@@ -595,7 +598,10 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
+    # Streamlit button for reliable navigation
+    if st.button("Register Now", key="classes_register"):
+        navigate_to("Register")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
@@ -643,7 +649,6 @@ def render_admin():
     if not st.session_state.admin_authenticated:
         pwd = st.text_input("Enter admin password", type="password", key="admin_pwd")
         if st.button("Authenticate"):
-            # Simple password check - replace with secure auth in production
             if pwd == "adminpass":
                 st.session_state.admin_authenticated = True
                 st.success("Authenticated.")
@@ -680,7 +685,6 @@ def render_register():
     }
 
     with st.form("reg_form", clear_on_submit=False):
-        # Card 1 - Student Info
         st.markdown(
             """
             <div class="reg-card">
@@ -707,7 +711,6 @@ def render_register():
 
         school = st.text_input("School Name (optional)", key="school", label_visibility="visible")
 
-        # Card 2 - Class Details
         st.markdown(
             """
             <div class="reg-card">
@@ -728,7 +731,6 @@ def render_register():
         pref_time = st.text_input("Preferred Days/Time", key="pref_time", placeholder=required_placeholders["pref_time"])
         experience = st.text_area("Previous Experience", key="experience")
 
-        # Card 3 - Parent & Emergency Contact
         st.markdown(
             """
             <div class="reg-card">
@@ -749,7 +751,6 @@ def render_register():
         em_rel = st.text_input("Relationship", key="em_rel")
         em_phone = st.text_input("Emergency Phone", key="em_phone")
 
-        # Card 4 - Medical & Consent
         st.markdown(
             """
             <div class="reg-card">
@@ -767,10 +768,8 @@ def render_register():
         signature = st.text_input("Parent/Guardian Signature", key="signature", placeholder=required_placeholders["signature"])
         sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
-        # Single submit button labeled "Submit Form"
         submitted = st.form_submit_button("Submit Form")
 
-    # Server-side validation (keeps logic reliable) + safe client-side highlight + shake injection
     if submitted:
         missing = []
         missing_placeholders = []
@@ -802,21 +801,17 @@ def render_register():
 
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
-
-            # Inject a small, safe JS snippet to highlight placeholders and add shake class.
-            # This script only manipulates styles and classes; it does not change navigation or create iframes.
+            # safe client-side highlight + shake
             js = f"""
             <script>
             (function() {{
               try {{
                 const missing = {json.dumps(missing_placeholders)};
                 missing.forEach(p => {{
-                  // find inputs by placeholder
                   const el = document.querySelector('[placeholder="'+p+'"]');
                   if (el) {{
                     el.style.borderColor = "#e11d48";
                     el.style.boxShadow = "0 0 0 4px rgba(225,29,72,0.08)";
-                    // briefly pulse
                     el.animate([
                       {{ boxShadow: "0 0 0 0 rgba(225,29,72,0)" }},
                       {{ boxShadow: "0 0 0 6px rgba(225,29,72,0.08)" }},
@@ -824,7 +819,6 @@ def render_register():
                     ], {{ duration: 700 }});
                   }}
                 }});
-                // add shake to the first .section container visible on page
                 const sections = document.querySelectorAll('.section');
                 if (sections.length > 0) {{
                   const target = sections[0];
@@ -883,25 +877,18 @@ elif page == "Admin":
 else:
     render_home()
 
-# BOTTOM NAV - top-level anchors (no iframes, no components)
-home = "active" if page == "Home" else ""
-classes = "active" if page == "Classes" else ""
-reg = "active" if page == "Register" else ""
-about = "active" if page == "About" else ""
-admin = "active" if page == "Admin" else ""
+# BOTTOM NAV - Streamlit buttons in columns for reliable navigation
+cols = st.columns(5)
+if cols[0].button("🏠 Home"):
+    navigate_to("Home")
+if cols[1].button("📚 Classes"):
+    navigate_to("Classes")
+if cols[2].button("📝 Register"):
+    navigate_to("Register")
+if cols[3].button("ℹ️ About"):
+    navigate_to("About")
+if cols[4].button("🔒 Admin"):
+    navigate_to("Admin")
 
-st.markdown(
-    f"""
-    <div class="bottom-nav">
-      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
-      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
-      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
-      <a class="{about}" href="/?page=About"><span>ℹ️</span>About</a>
-      <a class="{admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# FOOTER
+# Footer
 st.markdown('<div class="footer">@ AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
