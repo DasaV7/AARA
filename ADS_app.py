@@ -1,28 +1,16 @@
-# ADS_app.py - C01
-# Baseline: C00 (B00 + B01 + later fixes)
-# C01 changes:
-# - C00 is now the baseline theme (black–gold–red flyer)
-# - Logo enlarged and truly centered on all pages
-# - Early Bird red banner on all pages:
-#       * Active while total registrations < 10
-#       * Text: $50 early bird, regular $60 / $90
-#       * Automatically turns off once registrations >= 10
-# - Dynamic pricing based on registrations count
-#       * Enrollment option price changes ($50 → $60)
-#       * Class cards show early-bird vs regular pricing
-# - Home page slideshow fixed:
-#       * Uses base64-embedded images (slide1.jpg–slide5.jpg)
-#       * JS-based autoplay with fade transitions every 6s
-# - Registration page:
-#       * Select box backgrounds already dark
-#       * Multiselect dropdown background forced to dark theme
+# ADS_app.py - C02
+# Baseline: C01
+# C02 changes:
+# - Fix slideshow so images auto-rotate with fade transitions
+# - Ensure logo is perfectly centered on all pages
+# - Make "View Classes" button use primary (gold) style
+# - Preserve all C01 features (early bird logic, pricing, dark theme, multiselect fix, etc.)
 
 import streamlit as st
 import pandas as pd
 import os
 import json
 import base64
-import glob
 from datetime import datetime, date
 from PIL import Image
 
@@ -59,7 +47,7 @@ if "page" in params:
 
 page = st.session_state.page
 
-# THEME COLORS (flyer style baseline)
+# THEME COLORS
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
 GOLD = "#d4af37"
@@ -69,7 +57,7 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# CSS - Flyer theme + animations + form field styling + slideshow
+# CSS
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -285,7 +273,7 @@ textarea::placeholder {{
   border: 1px solid {GOLD} !important;
 }}
 
-/* Force dark theme for selectbox and multiselect (no light defaults) */
+/* Force dark theme for selectbox and multiselect */
 .stSelectbox > div > div {{
   background: #151515 !important;
   color: {GOLD_SOFT} !important;
@@ -339,12 +327,13 @@ div[data-baseweb="tag"] {{
   accent-color: #d4af37 !important;
 }}
 
-/* Logo glow wrapper - enlarged and centered */
+/* Logo glow wrapper - enlarged and perfectly centered */
 .logo-wrapper {{
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  width: 100%;
   margin-bottom: 8px;
 }}
 
@@ -432,16 +421,11 @@ def get_registration_count():
 
 
 def is_early_bird_active():
-    # Early bird for first 10 registrations
     return get_registration_count() < 10
 
 
 def get_pricing():
-    """
-    Returns pricing dict based on early bird status.
-    We’ll treat early bird as discount on 4-class price,
-    and show regular reference in banner.
-    """
+    # Early bird: cheaper 4-class price, 8-class stays 90
     if is_early_bird_active():
         return {
             "four": 50,
@@ -458,7 +442,7 @@ def get_pricing():
 
 log_visit()
 
-# HEADER - centered glowing logo (used on all pages)
+# HEADER
 def render_header():
     if os.path.exists(LOGO_PATH):
         st.markdown(
@@ -500,11 +484,12 @@ def render_header():
 
 def render_early_banner():
     if is_early_bird_active():
+        pricing = get_pricing()
         st.markdown(
             f"""
             <div class="early-banner">
               ★ Early Bird Offer ★&nbsp;&nbsp;
-              First 10 Registrations — Only <b>${get_pricing()["enrollment"]}</b>/month!
+              First 10 Registrations — Only <b>${pricing["enrollment"]}</b>/month!
               <br>
               Regular price: <b>$60</b> / <b>$90</b> · Limited spots · Register now to lock in your rate
             </div>
@@ -516,7 +501,7 @@ def render_early_banner():
 render_header()
 render_early_banner()
 
-# WHATSAPP BUTTON (Top Right)
+# WHATSAPP BUTTON
 st.markdown(
     """
     <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">
@@ -526,7 +511,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# QR CODE SECTION
+# QR CODE
 def render_qr_section():
     if qrcode is None:
         return
@@ -544,7 +529,7 @@ def render_qr_section():
     except Exception:
         st.info("QR generation not available in this environment.")
 
-# HOME PAGE - hero + JS slideshow
+# HOME PAGE
 def render_home():
     st.markdown(
         f"""
@@ -564,7 +549,7 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Collect slideshow images (slide1.jpg ... slide5.jpg)
+    # Slideshow images: slide1.jpg ... slide5.jpg
     image_paths = []
     for i in range(1, 6):
         candidate = f"slide{i}.jpg"
@@ -577,18 +562,23 @@ def render_home():
             <div class="section">
               <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
               <p style="color:#9ca3af;">Upload slide1.jpg, slide2.jpg, ... in the app root to enable the slideshow.</p>
+              <div style="margin-top:10px;">
+                <a class="btn-primary" href="/?page=Register">Register Now</a>
+                &nbsp;&nbsp;
+                <a class="btn-primary" href="/?page=Classes">View Classes</a>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     else:
-        # Encode images as base64 and inject into HTML
         img_tags = []
         for idx, path in enumerate(image_paths):
             try:
                 with open(path, "rb") as f:
                     data = f.read()
                 b64 = base64.b64encode(data).decode("utf-8")
+                # First image starts active; JS will manage rotation
                 active_class = "active" if idx == 0 else ""
                 img_tags.append(
                     f'<img src="data:image/jpeg;base64,{b64}" class="{active_class}">'
@@ -606,21 +596,33 @@ def render_home():
               <div style="margin-top:10px;">
                 <a class="btn-primary" href="/?page=Register">Register Now</a>
                 &nbsp;&nbsp;
-                <a class="btn-secondary" href="/?page=Classes">View Classes</a>
+                <a class="btn-primary" href="/?page=Classes">View Classes</a>
               </div>
             </div>
             <script>
             (function() {{
-              var container = document.querySelector('.slideshow-container');
-              if (!container) return;
-              var slides = container.querySelectorAll('img');
-              if (!slides || slides.length === 0) return;
-              var index = 0;
-              setInterval(function() {{
-                slides[index].classList.remove('active');
-                index = (index + 1) % slides.length;
-                slides[index].classList.add('active');
-              }}, 6000);
+              function startSlideshow() {{
+                var container = document.querySelector('.slideshow-container');
+                if (!container) return;
+                var slides = container.querySelectorAll('img');
+                if (!slides || slides.length <= 1) return;
+                var index = 0;
+                // Ensure first slide is active
+                slides.forEach(function(s, i) {{
+                  if (i === 0) s.classList.add('active');
+                  else s.classList.remove('active');
+                }});
+                setInterval(function() {{
+                  slides[index].classList.remove('active');
+                  index = (index + 1) % slides.length;
+                  slides[index].classList.add('active');
+                }}, 6000);
+              }}
+              if (document.readyState === 'complete') {{
+                startSlideshow();
+              }} else {{
+                window.addEventListener('load', startSlideshow);
+              }}
             }})();
             </script>
             """.format(
@@ -633,6 +635,11 @@ def render_home():
                 <div class="section">
                   <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
                   <p style="color:#9ca3af;">No valid slideshow images found.</p>
+                  <div style="margin-top:10px;">
+                    <a class="btn-primary" href="/?page=Register">Register Now</a>
+                    &nbsp;&nbsp;
+                    <a class="btn-primary" href="/?page=Classes">View Classes</a>
+                  </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -640,7 +647,7 @@ def render_home():
 
     render_qr_section()
 
-# CLASSES PAGE (dynamic pricing)
+# CLASSES PAGE
 def render_classes():
     pricing = get_pricing()
     four = pricing["four"]
@@ -780,7 +787,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + single submit button + safe client-side shake
+# REGISTRATION PAGE
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
@@ -816,7 +823,6 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        # Custom labels with red * next to text
         st.markdown(
             '<label class="required-label">Student Name</label>',
             unsafe_allow_html=True,
@@ -1120,7 +1126,6 @@ def render_register():
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
 
-            # Safe client-side shake + placeholder highlighting (no parent navigation issues)
             js = f"""
             <script>
             (function() {{
