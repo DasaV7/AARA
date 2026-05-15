@@ -1,15 +1,10 @@
-# ADS_app.py - C03
-# Baseline: C01 (preserved)
-# C02 adjustments preserved
-# C03 changes:
-# - Restored CSS-only slideshow engine (negative animation delays)
-# - Full-width inside Streamlit content column (max-width aligned with block-container)
-# - Cinematic height: 400px
-# - Overlay text ON (bottom-left badge)
-# - Rounded corners (12px)
-# - Logo perfectly centered on desktop + mobile
-# - Both Home CTA buttons use primary gold style
-# - All C01/C02 features preserved (early bird logic, pricing, dark theme, multiselect fix, registration flow)
+# ADS_app.py - C03-fix-selects
+# Baseline: C01/C02 preserved
+# This variant:
+# - Uses the C02 CSS for the global theme and form controls (select/multiselect fixes restored)
+# - Replaces only the slideshow CSS section with the CSS block you provided (the working CSS-only slideshow)
+# - Keeps the working CSS-only slideshow render function and layout from C03
+# - Preserves all other features (early-bird logic, pricing, centered logo, primary buttons, registration flow)
 
 import streamlit as st
 import pandas as pd
@@ -61,10 +56,11 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# CSS - Flyer theme + animations + form field styling + slideshow (CSS-only slideshow)
+# CSS: Use C02 global CSS (keeps select/multiselect dark fixes) and replace slideshow section
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
+
 :root {{
   color-scheme: dark;
 }}
@@ -75,12 +71,12 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 * {{
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui;
 }}
 
 .block-container {{
   padding-top: 40px !important;
-  max-width: 980px !important;
+  max-width: 900px !important;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -90,108 +86,113 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .section {{
-  background:{CARD_BG};
-  padding:18px;
-  border-radius:14px;
-  border:1px solid {BORDER};
-  margin-bottom:14px;
+  background: {CARD_BG};
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid {BORDER};
+  margin-bottom: 14px;
 }}
 
 .title {{
-  font-size:1.6rem;
-  font-weight:700;
-  color:{GOLD};
-  font-family:'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: {GOLD};
+  font-family: 'Playfair Display', serif;
 }}
 
 .subtitle {{
-  font-size:1rem;
-  color:{GOLD_SOFT};
-  margin-bottom:10px;
+  font-size: 1rem;
+  color: {GOLD_SOFT};
+  margin-bottom: 10px;
 }}
 
 .btn-primary {{
-  display:inline-block;
-  padding:12px 22px;
+  display: inline-block;
+  padding: 12px 22px;
   background: {GOLD};
-  color:{BG_TOP} !important;
-  border-radius:999px;
-  text-decoration:none;
-  font-weight:600;
+  color: {BG_TOP} !important;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
   transition: background 0.2s ease;
 }}
+
 .btn-primary:hover {{
-  background:{GOLD_SOFT};
+  background: {GOLD_SOFT};
 }}
 
 .btn-secondary {{
-  display:inline-block;
-  padding:12px 22px;
-  background:transparent;
-  color:{GOLD} !important;
-  border-radius:999px;
-  border:1px solid {GOLD};
-  text-decoration:none;
-  font-weight:500;
-  transition: background 0.2s ease;
+  display: inline-block;
+  padding: 12px 22px;
+  background: transparent;
+  color: {GOLD_SOFT} !important;
+  border-radius: 999px;
+  border: 1px solid {GOLD};
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease;
 }}
+
 .btn-secondary:hover {{
-  background: rgba(212,175,55,0.06);
+  background: {GOLD};
+  color: {BG_TOP} !important;
 }}
 
 .whatsapp-btn {{
-  position:fixed;
-  top:70px;
-  right:20px;
-  background:#25D366;
-  color:white;
-  padding:14px 16px;
-  border-radius:50%;
-  font-size:22px;
-  text-decoration:none;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  z-index:9999;
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  padding: 14px 16px;
+  border-radius: 50%;
+  font-size: 22px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
 }}
 
 .bottom-nav {{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  background:{CARD_BG};
-  border-top:1px solid {BORDER};
-  display:flex;
-  justify-content:space-around;
-  padding:10px 0;
-  z-index:999;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: {CARD_BG};
+  border-top: 1px solid {BORDER};
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  z-index: 999;
 }}
 
 .bottom-nav a {{
-  text-decoration:none;
-  font-size:0.85rem;
-  color:{TEXT};
-  text-align:center;
+  text-decoration: none;
+  font-size: 0.85rem;
+  color: {TEXT};
+  text-align: center;
 }}
+
 .bottom-nav a span {{
-  display:block;
-  font-size:1.2rem;
+  display: block;
+  font-size: 1.2rem;
 }}
+
 .bottom-nav a.active {{
-  color:{GOLD};
+  color: {GOLD};
 }}
 
 .class-card {{
-  padding:10px;
-  border-radius:10px;
-  background:rgba(15,23,42,0.03);
-  border:1px solid {BORDER};
-  margin-bottom:8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(15,23,42,0.03);
+  border: 1px solid {BORDER};
+  margin-bottom: 8px;
 }}
 
 .required-label::after {{
   content: " *";
   color: #ff4d4d;
-  font-weight: 700;
+  font-weight: 900;
 }}
 
 @keyframes shake {{
@@ -206,126 +207,154 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .footer {{
-  text-align:center;
-  color:#9ca3af;
-  font-size:0.8rem;
-  margin-top:40px;
-  margin-bottom:60px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  margin-top: 40px;
+  margin-bottom: 60px;
 }}
 
 .reg-card {{
-  border-radius:14px;
-  border:1px solid {BORDER};
-  background:{CARD_BG};
-  padding:14px 16px;
-  margin-bottom:12px;
-  box-shadow:0 4px 10px rgba(15,23,42,0.06);
+  border-radius: 14px;
+  border: 1px solid {BORDER};
+  background: {CARD_BG};
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 10px rgba(15,23,42,0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  cursor:pointer;
+  cursor: pointer;
 }}
 
 .reg-card:hover {{
   transform: translateY(-4px);
-  box-shadow:0 10px 24px rgba(15,23,42,0.14);
-  border-color:{GOLD};
+  box-shadow: 0 10px 24px rgba(15,23,42,0.14);
+  border-color: {GOLD};
 }}
 
 .reg-card-header {{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-weight:600;
-  font-size:1rem;
-  color:{TEXT};
-}}
-.reg-card-sub {{
-  font-size:0.9rem;
-  color:#6b7280;
-  margin-top:4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1rem;
+  color: {TEXT};
 }}
 
-/* === DARK-GOLD FORM THEME FIX === */
+.reg-card-sub {{
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 4px;
+}}
+
+/* REGISTRATION FORM FIXES - dark fields + gold labels (C02) */
 label {{
-  color:{GOLD_SOFT} !important;
+  color: {GOLD_SOFT} !important;
 }}
 
 input, textarea, select {{
-  background:#151515 !important;
-  color:{GOLD_SOFT} !important;
-  border:1px solid {GOLD} !important;
-  border-radius:8px !important;
-}}
-
-input::placeholder, textarea::placeholder {{
-  color:{GOLD_SOFT} !important;
-  opacity:0.85 !important;
-}}
-
-/* Selectbox + Dropdown */
-div[data-baseweb="select"] {{
-  background-color: #151515 !important;
+  background: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
   border-radius: 8px !important;
 }}
-div[data-baseweb="select"] * {{
+
+input::placeholder,
+textarea::placeholder {{
   color: {GOLD_SOFT} !important;
-}}
-div[data-baseweb="select"] svg {{
-  fill: {GOLD} !important;
+  opacity: 0.4 !important;
 }}
 
-/* Multiselect */
-.stMultiSelect div[data-baseweb="select"] {{
-  background-color: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-.stMultiSelect div[data-baseweb="select"] * {{
-  color: {GOLD_SOFT} !important;
-}}
-div[data-baseweb="tag"] {{
-  background-color: {RED} !important;
-  color: {GOLD_SOFT} !important;
-  border-radius: 6px !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-/* Radio buttons */
-.stRadio label {{
-  color: {GOLD_SOFT} !important;
-  opacity: 1 !important;
-}}
-.stRadio div[role="radio"] {{
-  background-color: #151515 !important;
-  border: 2px solid {GOLD} !important;
-  border-radius: 50% !important;
-}}
-.stRadio div[role="radio"] input[type="radio"] {{
-  accent-color: {GOLD} !important;
-}}
-
-/* Date input */
+.stTextInput input,
+.stTextArea textarea,
 .stDateInput input {{
-  background-color: #151515 !important;
+  background: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
 }}
 
-/* CSS-only slideshow: slides stacked and animated via keyframes.
-   Each .slide uses the same animation but with a negative delay so they cycle.
-   Cinematic height: 400px; rounded corners: 12px; full-width inside content column.
+/* Force dark theme for selectbox and multiselect (C02) */
+.stSelectbox > div > div {{
+  background: #151515 !important;
+  color: {GOLD_SOFT} !important;
+  border: 1px solid {GOLD} !important;
+}}
+
+.stMultiSelect > div > div {{
+  background: #151515 !important;
+  color: {GOLD_SOFT} !important;
+  border: 1px solid {GOLD} !important;
+}}
+
+.stMultiSelect div[data-baseweb="select"] {{
+  background: #151515 !important;
+  color: #f5e8c7 !important;
+  border: 1px solid #d4af37 !important;
+}}
+
+.stMultiSelect div[data-baseweb="select"] * {{
+  background: #151515 !important;
+  color: #f5e8c7 !important;
+}}
+
+div[data-baseweb="select"] {{
+  background: #151515 !important;
+  color: #f5e8c7 !important;
+  border: 1px solid #d4af37 !important;
+}}
+
+div[data-baseweb="select"] * {{
+  color: #f5e8c7 !important;
+}}
+
+div[data-baseweb="select"] svg {{
+  fill: #d4af37 !important;
+}}
+
+/* Multiselect chips */
+div[data-baseweb="tag"] {{
+  background: #8b0000 !important;
+  color: #f5e8c7 !important;
+  border-radius: 6px !important;
+}}
+
+/* Gold radio circle */
+.stRadio div[role="radio"] {{
+  border: 2px solid #d4af37 !important;
+}}
+
+.stRadio div[role="radio"] input[type="radio"] {{
+  accent-color: #d4af37 !important;
+}}
+
+/* Logo glow wrapper - enlarged and perfectly centered (C02) */
+.logo-wrapper {{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 8px;
+}}
+
+.logo-circle {{
+  border-radius: 50%;
+  padding: 10px;
+  box-shadow: 0 0 40px rgba(212,175,55,0.7);
+  background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
+}}
+
+/* === SLIDESHOW SECTION (replaced with your working CSS from before C03) ===
+   This is the slideshow CSS you provided earlier (keeps the CSS-only negative-delay approach).
 */
 .slideshow {{
   position: relative;
   width: 100%;
   max-width: 920px;
-  height: 400px;
+  height: 380px;
   margin: 0 auto 12px auto;
   border-radius: 12px;
   overflow: hidden;
   border:1px solid {BORDER};
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }}
 .slide {{
   position: absolute;
@@ -336,7 +365,7 @@ div[data-baseweb="tag"] {{
   animation-name: slidefade;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-}}
+}
 @keyframes slidefade {{
   0%   {{ opacity: 0; }}
   8%   {{ opacity: 1; }}
@@ -362,21 +391,6 @@ div[data-baseweb="tag"] {{
   border-radius:999px;
   box-shadow:0 18px 60px rgba(212,175,55,0.18);
   background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);
-}}
-
-/* Logo wrapper to ensure perfect centering on desktop and mobile */
-.logo-wrapper {{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  width:100%;
-  margin-bottom:8px;
-}}
-.logo-circle {{
-  border-radius:50%;
-  padding:10px;
-  box-shadow:0 0 40px rgba(212,175,55,0.7);
-  background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
 }}
 </style>
 """
