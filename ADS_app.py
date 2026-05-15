@@ -1,6 +1,6 @@
-# ADS_app.py - B04 (B00 baseline + B01 fixes preserved; B02/B03 fixes + B04 update: use components.html for slideshow and JS injection so scripts render correctly; reliable client-side navigation)
-# Baseline: B00 theme + B01 fixes (always preserved)
-# Version: B04
+# ADS_app.py - Restored (B00 baseline + B01 fixes preserved)
+# Restored from original PDF baseline; cleaned syntax and routing so pages render correctly.
+# Keep B00 and B01 rules: black-gold-red theme, centered logo, slideshow, single Submit Form, dark form fields, gold labels.
 
 import streamlit as st
 import pandas as pd
@@ -11,12 +11,11 @@ from datetime import datetime, date
 from PIL import Image
 import io
 import base64
-import streamlit.components.v1 as components
 
 # Optional dependency
 try:
     import qrcode
-except ImportError:
+except Exception:
     qrcode = None
 
 # PAGE CONFIG
@@ -40,7 +39,7 @@ if "page" not in st.session_state:
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-# Robust query-params retrieval: handle different Streamlit versions/environments
+# Robust query-params retrieval (works across Streamlit versions)
 params = {}
 _get_qs = getattr(st, "experimental_get_query_params", None)
 if callable(_get_qs):
@@ -73,15 +72,6 @@ RED = "#8b0000"
 TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
-
-# Helper to convert image to base64 for inline embedding (keeps logo rendering robust)
-def _img_to_base64(path):
-    try:
-        with open(path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode("utf-8")
-    except Exception:
-        return ""
 
 # CSS - Flyer theme + animations + form field styling + slideshow
 CSS = f"""
@@ -334,38 +324,13 @@ div[data-baseweb="tag"] {{
   border: 1px solid {GOLD} !important;
 }}
 
-/* Slideshow container */
+/* Slideshow container (kept simple; slideshow uses st.image list) */
 .slideshow {{
-  position: relative;
   width: 100%;
   max-width: 900px;
-  height: 360px;
-  overflow: hidden;
+  margin: 0 auto 12px auto;
   border-radius: 12px;
   border:1px solid {BORDER};
-  margin: 0 auto 12px auto;
-}}
-.slide {{
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 1s ease;
-  background-size: cover;
-  background-position: center;
-}}
-.slide.active {{
-  opacity: 1;
-}}
-.slide-overlay {{
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  color: {GOLD_SOFT};
-  background: rgba(0,0,0,0.35);
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(212,175,55,0.08);
 }}
 </style>
 """
@@ -394,30 +359,17 @@ def read_csv(path):
 
 log_visit()
 
-# HEADER - use st.image for logo (centered, glowing)
+# HEADER - use st.image for logo (centered)
 def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if os.path.exists(LOGO_PATH):
-            b64 = _img_to_base64(LOGO_PATH)
-            if b64:
-                st.markdown(
-                    f"""
-                    <div style="text-align:center;">
-                      <div style="display:inline-block; padding:12px; border-radius:999px; box-shadow:0 8px 30px rgba(212,175,55,0.18); background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);">
-                        <img src="data:image/png;base64,{b64}" width="120" style="border-radius:999px;"/>
-                      </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.image(LOGO_PATH, width=120)
+            try:
+                st.image(LOGO_PATH, width=140)
+            except Exception:
+                st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>", unsafe_allow_html=True)
         else:
-            st.markdown(
-                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700; font-family:\"Playfair Display\", serif;'>AARA Dance Studio</div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>", unsafe_allow_html=True)
 
     st.markdown(
         f"""
@@ -446,7 +398,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# QR CODE SECTION
+# QR CODE SECTION (optional)
 def render_qr_section():
     if qrcode is None:
         return
@@ -458,9 +410,10 @@ def render_qr_section():
         buf.seek(0)
         st.image(buf, caption="Scan to open registration page", width=140)
     except Exception:
-        st.info("QR generation not available in this environment.")
+        # quietly ignore QR issues
+        pass
 
-# HOME PAGE - Hero + slideshow
+# HOME PAGE - Hero + slideshow (restored to original simple approach)
 def render_home():
     render_header()
     st.markdown(
@@ -480,75 +433,53 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow: gather slide images named slide1.jpg ... slide5.jpg
-    slide_paths = []
+    # Slideshow: look for slide1.jpg ... slide5.jpg and any slide*.png/jpeg
+    raw_files = []
     for i in range(1, 6):
-        for ext in ("jpg", "jpeg", "png", "webp"):
+        for ext in ("jpg", "jpeg", "png"):
             p = f"slide{i}.{ext}"
             if os.path.exists(p):
-                slide_paths.append(p)
+                raw_files.append(p)
                 break
 
-    # If fewer than 4 slides found, also include any slide*.jpg/png files
-    if len(slide_paths) < 4:
+    # fallback to any slide*.jpg/png if not enough named slides
+    if len(raw_files) < 4:
         extras = sorted(glob.glob("slide*.jpg") + glob.glob("slide*.jpeg") + glob.glob("slide*.png"))
         for p in extras:
-            if p not in slide_paths:
-                slide_paths.append(p)
-            if len(slide_paths) >= 5:
+            if p not in raw_files:
+                raw_files.append(p)
+            if len(raw_files) >= 5:
                 break
 
-    if not slide_paths:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg, slide4.jpg (etc.) in the root directory for a slideshow.")
+    valid_images = []
+    for path in raw_files:
+        try:
+            img = Image.open(path)
+            img.load()
+            valid_images.append(img)
+        except Exception:
+            continue
+
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Studio Moments", unsafe_allow_html=True)
+
+    if valid_images:
+        # Use st.image with a list to show slideshow-like gallery (keeps layout consistent)
+        st.image(valid_images, width=700)
     else:
-        # Build slideshow HTML with autoplay (6s per slide) and fade transitions
-        slides_html = []
-        for idx, path in enumerate(slide_paths):
-            b64 = _img_to_base64(path)
-            if not b64:
-                style = f"background-image: url('{path}');"
-            else:
-                style = f"background-image: url('data:image/png;base64,{b64}');"
-            active = "active" if idx == 0 else ""
-            slides_html.append(f'<div class="slide {active}" style="{style}"></div>')
+        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
 
-        slides_block = "\n".join(slides_html)
-        # Use components.html to ensure script tags execute and are not shown as text
-        slideshow_html = f"""
-        <div class="section">
-          <div class="slideshow" id="slideshow">
-            {slides_block}
-            <div class="slide-overlay">Studio Moments</div>
-          </div>
-          <div style="text-align:center; margin-top:8px;">
-            <a class="btn-primary" href="?page=Register">Register Now</a>
-            &nbsp;&nbsp;
-            <a class="btn-secondary" href="?page=Classes">View Classes</a>
-          </div>
+    st.markdown(
+        f"""
+        <div style="margin-top:10px;">
+          <a class="btn-primary" href="/?page=Register">Register Now</a>
+          &nbsp;&nbsp;
+          <a class="btn-primary" href="/?page=Classes">View Classes</a>
         </div>
-
-        <script>
-        (function() {{
-          const slides = document.querySelectorAll('#slideshow .slide');
-          let idx = 0;
-          const total = slides.length;
-          const interval = 6000; // 6s per slide
-          function show(i) {{
-            slides.forEach((s, si) => {{
-              s.classList.toggle('active', si === i);
-            }});
-          }}
-          if (total > 1) {{
-            setInterval(() => {{
-              idx = (idx + 1) % total;
-              show(idx);
-            }}, interval);
-          }}
-        }})();
-        </script>
-        """
-        # Render via components.html so the <script> runs and is not printed as text
-        components.html(slideshow_html, height=420, scrolling=False)
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
     render_qr_section()
 
@@ -595,25 +526,20 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    # Use a components.html anchor to ensure navigation works in all environments
-    nav_html = """
-    <div style="text-align:center; margin-top:8px;">
-      <a class="btn-primary" href="?page=Register">Register Now</a>
-    </div>
-    """
-    components.html(nav_html, height=60, scrolling=False)
+    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
 def render_about():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
+
     st.markdown(
-        """
-        <div style="text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:10px; color: {gold};">
+        f"""
+        <div style="text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:10px; color:{GOLD};">
           Find your Groove!
         </div>
-        """.replace("{gold}", GOLD),
+        """,
         unsafe_allow_html=True,
     )
 
@@ -638,7 +564,7 @@ def render_about():
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ADMIN PAGE (password protected, CSV download)
+# ADMIN PAGE
 def render_admin():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -648,7 +574,7 @@ def render_admin():
     if not st.session_state.admin_authenticated:
         pwd = st.text_input("Enter admin password", type="password", key="admin_pwd")
         if st.button("Authenticate"):
-            # Simple password check - in production, replace with secure auth
+            # Simple password check - replace with secure auth in production
             if pwd == "adminpass":
                 st.session_state.admin_authenticated = True
                 st.success("Authenticated.")
@@ -670,14 +596,13 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - Vertical Cards with Hover + Form
+# REGISTRATION PAGE - Vertical Cards with Form
 def render_register():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Fill in the details below to secure your spot.</div>', unsafe_allow_html=True)
 
-    # placeholders used for JS highlighting
     required_placeholders = {
         "student_name": "_req_student_name",
         "dob": "_req_dob",
@@ -685,7 +610,6 @@ def render_register():
         "signature": "_req_signature"
     }
 
-    # Use a single form with one submit button labeled "Submit Form"
     with st.form("reg_form", clear_on_submit=False):
         # Card 1 - Student Info
         st.markdown(
@@ -777,17 +701,12 @@ def render_register():
         # Single submit button labeled "Submit Form"
         submitted = st.form_submit_button("Submit Form")
 
-    # Validation and saving
     if submitted:
         missing = []
-        missing_placeholders = []
-
         if not student_name or not student_name.strip():
             missing.append("Student Name")
-            missing_placeholders.append(required_placeholders["student_name"])
         if not dob or not dob.strip():
             missing.append("Date of Birth / Age")
-            missing_placeholders.append(required_placeholders["dob"])
         if not gender or not gender.strip():
             missing.append("Gender")
         if not enrollment or not enrollment.strip():
@@ -798,45 +717,15 @@ def render_register():
             missing.append("Level")
         if not pref_time or not pref_time.strip():
             missing.append("Preferred Days/Time")
-            missing_placeholders.append(required_placeholders["pref_time"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
         if not signature or not signature.strip():
             missing.append("Parent/Guardian Signature")
-            missing_placeholders.append(required_placeholders["signature"])
         if not sig_date:
             missing.append("Date")
 
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
-
-            # Client-side highlight + shake animation via components.html so JS executes
-            js = f"""
-            <div id="validation-js"></div>
-            <script>
-            (function() {{
-              try {{
-                const missing = {json.dumps(missing_placeholders)};
-                missing.forEach(p => {{
-                  const el = document.querySelector('[placeholder="'+p+'"]');
-                  if (el) {{
-                    el.style.borderColor = "#e11d48";
-                    el.style.boxShadow = "0 0 0 3px rgba(225,29,72,0.08)";
-                  }}
-                }});
-                const sections = window.parent.document.querySelectorAll('.section');
-                if (sections.length > 0) {{
-                  const last = sections[sections.length - 1];
-                  last.classList.add('shake');
-                  setTimeout(() => last.classList.remove('shake'), 600);
-                }}
-              }} catch(e) {{
-                console.log('validation script error', e);
-              }}
-            }})();
-            </script>
-            """
-            components.html(js, height=0, scrolling=False)
         else:
             record = {
                 "timestamp": datetime.now().isoformat(),
@@ -889,17 +778,18 @@ reg = "active" if page == "Register" else ""
 about = "active" if page == "About" else ""
 admin = "active" if page == "Admin" else ""
 
-# Use components.html for bottom nav anchors so navigation works reliably
-nav_html = f"""
-<div class="bottom-nav">
-  <a class="{home}" href="?page=Home"><span>🏠</span>Home</a>
-  <a class="{classes}" href="?page=Classes"><span>📚</span>Classes</a>
-  <a class="{reg}" href="?page=Register"><span>📝</span>Register</a>
-  <a class="{about}" href="?page=About"><span>ℹ️</span>About</a>
-  <a class="{admin}" href="?page=Admin"><span>🔒</span>Admin</a>
-</div>
-"""
-components.html(nav_html, height=72, scrolling=False)
+st.markdown(
+    f"""
+    <div class="bottom-nav">
+      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{about}" href="/?page=About"><span>ℹ️</span>About</a>
+      <a class="{admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # FOOTER
 st.markdown('<div class="footer">@ AARA Dance Studio · Fate · Rockwall · Dallas, TX</div>', unsafe_allow_html=True)
