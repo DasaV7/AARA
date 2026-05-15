@@ -1,18 +1,30 @@
-# ADS_app.py - B03
-# Baseline: B00 theme + B01 fixes + B02 + B03 updates
-# B03 changes:
-# - Logo enlarged further and centered (via shared header on all pages)
-# - Slideshow updated to use <img> elements with CSS-only autoplay + fade transitions (4 slides, 6s each)
-# - Selectbox and multiselect backgrounds forced to dark theme (no Streamlit light defaults)
-# - Required-field red * placed next to each required label via custom HTML labels
-# - Single submit button labeled “Submit Form” retained
-# - Client-side shake + placeholder highlighting kept, without breaking navigation
+# ADS_app.py - C01
+# Baseline: C00 (B00 + B01 + later fixes)
+# C01 changes:
+# - C00 is now the baseline theme (black–gold–red flyer)
+# - Logo enlarged and truly centered on all pages
+# - Early Bird red banner on all pages:
+#       * Active while total registrations < 10
+#       * Text: $50 early bird, regular $60 / $90
+#       * Automatically turns off once registrations >= 10
+# - Dynamic pricing based on registrations count
+#       * Enrollment option price changes ($50 → $60)
+#       * Class cards show early-bird vs regular pricing
+# - Home page slideshow fixed:
+#       * Uses base64-embedded images (slide1.jpg–slide5.jpg)
+#       * JS-based autoplay with fade transitions every 6s
+# - Registration page:
+#       * Select box backgrounds already dark
+#       * Multiselect dropdown background forced to dark theme
 
 import streamlit as st
 import pandas as pd
 import os
 import json
+import base64
+import glob
 from datetime import datetime, date
+from PIL import Image
 
 # Optional QR code support
 try:
@@ -47,7 +59,7 @@ if "page" in params:
 
 page = st.session_state.page
 
-# THEME COLORS (flyer style baseline B00)
+# THEME COLORS (flyer style baseline)
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
 GOLD = "#d4af37"
@@ -286,6 +298,17 @@ textarea::placeholder {{
   border: 1px solid {GOLD} !important;
 }}
 
+.stMultiSelect div[data-baseweb="select"] {{
+  background: #151515 !important;
+  color: #f5e8c7 !important;
+  border: 1px solid #d4af37 !important;
+}}
+
+.stMultiSelect div[data-baseweb="select"] * {{
+  background: #151515 !important;
+  color: #f5e8c7 !important;
+}}
+
 div[data-baseweb="select"] {{
   background: #151515 !important;
   color: #f5e8c7 !important;
@@ -321,6 +344,7 @@ div[data-baseweb="tag"] {{
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
   margin-bottom: 8px;
 }}
 
@@ -331,7 +355,21 @@ div[data-baseweb="tag"] {{
   background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
 }}
 
-/* Slideshow banner - CSS-only autoplay with fade transitions (4 slides, 6s each) */
+/* Early bird banner */
+.early-banner {{
+  background: {RED};
+  color: {GOLD_SOFT};
+  padding: 8px 16px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 600;
+  margin: 10px auto 16px auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  max-width: 900px;
+  border: 1px solid {GOLD};
+}}
+
+/* Slideshow container */
 .slideshow-container {{
   position: relative;
   max-width: 100%;
@@ -343,34 +381,17 @@ div[data-baseweb="tag"] {{
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }}
 
-.slide {{
+.slideshow-container img {{
   position: absolute;
   width: 100%;
   height: 100%;
-  opacity: 0;
-  animation-name: fadeSlide;
-  animation-duration: 24s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}}
-
-.slide img {{
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
 }}
 
-.slide1 {{ animation-delay: 0s; }}
-.slide2 {{ animation-delay: 6s; }}
-.slide3 {{ animation-delay: 12s; }}
-.slide4 {{ animation-delay: 18s; }}
-
-@keyframes fadeSlide {{
-  0%   {{ opacity: 0; }}
-  5%   {{ opacity: 1; }}
-  25%  {{ opacity: 1; }}
-  30%  {{ opacity: 0; }}
-  100% {{ opacity: 0; }}
+.slideshow-container img.active {{
+  opacity: 1;
 }}
 </style>
 """
@@ -400,32 +421,64 @@ def read_csv(path):
     return pd.DataFrame()
 
 
+def get_registration_count():
+    if os.path.exists(REG_FILE):
+        try:
+            df = pd.read_csv(REG_FILE)
+            return len(df)
+        except Exception:
+            return 0
+    return 0
+
+
+def is_early_bird_active():
+    # Early bird for first 10 registrations
+    return get_registration_count() < 10
+
+
+def get_pricing():
+    """
+    Returns pricing dict based on early bird status.
+    We’ll treat early bird as discount on 4-class price,
+    and show regular reference in banner.
+    """
+    if is_early_bird_active():
+        return {
+            "four": 50,
+            "eight": 90,
+            "enrollment": 50,  # $50/month
+        }
+    else:
+        return {
+            "four": 60,
+            "eight": 90,
+            "enrollment": 60,  # $60/month
+        }
+
+
 log_visit()
 
 # HEADER - centered glowing logo (used on all pages)
 def render_header():
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if os.path.exists(LOGO_PATH):
-            st.markdown(
-                "<div class='logo-wrapper'><div class='logo-circle'>",
-                unsafe_allow_html=True,
-            )
-            # Enlarged logo
-            st.image(LOGO_PATH, width=320)
-            st.markdown(
-                "</div></div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f"""
-                <div style='text-align:center; color:{GOLD}; font-size:1.8rem; font-weight:700;'>
-                    AARA Dance Studio
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    if os.path.exists(LOGO_PATH):
+        st.markdown(
+            "<div class='logo-wrapper'><div class='logo-circle'>",
+            unsafe_allow_html=True,
+        )
+        st.image(LOGO_PATH, width=340)
+        st.markdown(
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f"""
+            <div style='text-align:center; color:{GOLD}; font-size:1.8rem; font-weight:700;'>
+                AARA Dance Studio
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown(
         f"""
@@ -445,7 +498,23 @@ def render_header():
     )
 
 
+def render_early_banner():
+    if is_early_bird_active():
+        st.markdown(
+            f"""
+            <div class="early-banner">
+              ★ Early Bird Offer ★&nbsp;&nbsp;
+              First 10 Registrations — Only <b>${get_pricing()["enrollment"]}</b>/month!
+              <br>
+              Regular price: <b>$60</b> / <b>$90</b> · Limited spots · Register now to lock in your rate
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 render_header()
+render_early_banner()
 
 # WHATSAPP BUTTON (Top Right)
 st.markdown(
@@ -475,7 +544,7 @@ def render_qr_section():
     except Exception:
         st.info("QR generation not available in this environment.")
 
-# HOME PAGE - hero + CSS slideshow
+# HOME PAGE - hero + JS slideshow
 def render_home():
     st.markdown(
         f"""
@@ -495,32 +564,88 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow banner (CSS-only autoplay, fade transitions)
-    # Requires slide1.jpg, slide2.jpg, slide3.jpg, slide4.jpg in the app root
-    st.markdown(
-        """
-        <div class="section">
-          <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
-          <div class="slideshow-container">
-            <div class="slide slide1"><img src="slide1.jpg" alt="Studio slide 1"></div>
-            <div class="slide slide2"><img src="slide2.jpg" alt="Studio slide 2"></div>
-            <div class="slide slide3"><img src="slide3.jpg" alt="Studio slide 3"></div>
-            <div class="slide slide4"><img src="slide4.jpg" alt="Studio slide 4"></div>
-          </div>
-          <div style="margin-top:10px;">
-            <a class="btn-primary" href="/?page=Register">Register Now</a>
-            &nbsp;&nbsp;
-            <a class="btn-secondary" href="/?page=Classes">View Classes</a>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Collect slideshow images (slide1.jpg ... slide5.jpg)
+    image_paths = []
+    for i in range(1, 6):
+        candidate = f"slide{i}.jpg"
+        if os.path.exists(candidate):
+            image_paths.append(candidate)
+
+    if not image_paths:
+        st.markdown(
+            """
+            <div class="section">
+              <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
+              <p style="color:#9ca3af;">Upload slide1.jpg, slide2.jpg, ... in the app root to enable the slideshow.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        # Encode images as base64 and inject into HTML
+        img_tags = []
+        for idx, path in enumerate(image_paths):
+            try:
+                with open(path, "rb") as f:
+                    data = f.read()
+                b64 = base64.b64encode(data).decode("utf-8")
+                active_class = "active" if idx == 0 else ""
+                img_tags.append(
+                    f'<img src="data:image/jpeg;base64,{b64}" class="{active_class}">'
+                )
+            except Exception:
+                continue
+
+        if img_tags:
+            slideshow_html = """
+            <div class="section">
+              <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
+              <div class="slideshow-container">
+                {imgs}
+              </div>
+              <div style="margin-top:10px;">
+                <a class="btn-primary" href="/?page=Register">Register Now</a>
+                &nbsp;&nbsp;
+                <a class="btn-secondary" href="/?page=Classes">View Classes</a>
+              </div>
+            </div>
+            <script>
+            (function() {{
+              var container = document.querySelector('.slideshow-container');
+              if (!container) return;
+              var slides = container.querySelectorAll('img');
+              if (!slides || slides.length === 0) return;
+              var index = 0;
+              setInterval(function() {{
+                slides[index].classList.remove('active');
+                index = (index + 1) % slides.length;
+                slides[index].classList.add('active');
+              }}, 6000);
+            }})();
+            </script>
+            """.format(
+                imgs="".join(img_tags)
+            )
+            st.markdown(slideshow_html, unsafe_allow_html=True)
+        else:
+            st.markdown(
+                """
+                <div class="section">
+                  <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
+                  <p style="color:#9ca3af;">No valid slideshow images found.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
     render_qr_section()
 
-# CLASSES PAGE
+# CLASSES PAGE (dynamic pricing)
 def render_classes():
+    pricing = get_pricing()
+    four = pricing["four"]
+    eight = pricing["eight"]
+
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Programs & Fees</div>', unsafe_allow_html=True)
     st.markdown(
@@ -529,36 +654,36 @@ def render_classes():
     )
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
           <b>Tiny Stars (Ages 5-8)</b><br>
           Beginner / Intermediate<br>
           Wed &amp; Fri · 6:30-7:30 PM<br>
-          4 classes: $60 · 8 classes: $100
+          4 classes: ${four} · 8 classes: ${eight}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
           <b>Shining Stars (Ages 9+)</b><br>
           Beginner / Intermediate<br>
           Tue · 7-8 PM<br>
-          4 classes: $60 · 8 classes: $100
+          4 classes: ${four} · 8 classes: ${eight}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        """
+        f"""
         <div class="class-card">
           <b>Dream Chasers (Ladies 18+)</b><br>
           Beginner / Intermediate<br>
           Thu 6:30-7:30 PM · Sat 10:30-11:30 AM<br>
-          4 classes: $50 · 8 classes: $80
+          4 classes: ${four} · 8 classes: ${eight}
         </div>
         """,
         unsafe_allow_html=True,
@@ -657,6 +782,9 @@ def render_admin():
 
 # REGISTRATION PAGE - vertical cards + single submit button + safe client-side shake
 def render_register():
+    pricing = get_pricing()
+    enroll_price = pricing["enrollment"]
+
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
     st.markdown(
@@ -754,7 +882,7 @@ def render_register():
         )
         enrollment = st.selectbox(
             "",
-            ["", "Regular ($50/month)", "Drop-in ($15/session)"],
+            ["", f"Regular (${enroll_price}/month)", "Drop-in ($15/session)"],
             key="enroll",
             label_visibility="collapsed",
         )
