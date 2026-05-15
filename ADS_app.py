@@ -204,7 +204,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   color:{GOLD};
   background: rgba(212,175,55,0.06);
   border: 1px solid rgba(212,175,55,0.08);
-}
+}}
 
 .class-card {{
   padding:10px;
