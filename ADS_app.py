@@ -1,10 +1,15 @@
-# ADS_app.py - C02
-# Baseline: C01
-# C02 changes:
-# - Fix slideshow so images auto-rotate with fade transitions
-# - Ensure logo is perfectly centered on all pages
-# - Make "View Classes" button use primary (gold) style
-# - Preserve all C01 features (early bird logic, pricing, dark theme, multiselect fix, etc.)
+# ADS_app.py - C03
+# Baseline: C01 (preserved)
+# C02 adjustments preserved
+# C03 changes:
+# - Restored CSS-only slideshow engine (negative animation delays)
+# - Full-width inside Streamlit content column (max-width aligned with block-container)
+# - Cinematic height: 400px
+# - Overlay text ON (bottom-left badge)
+# - Rounded corners (12px)
+# - Logo perfectly centered on desktop + mobile
+# - Both Home CTA buttons use primary gold style
+# - All C01/C02 features preserved (early bird logic, pricing, dark theme, multiselect fix, registration flow)
 
 import streamlit as st
 import pandas as pd
@@ -12,7 +17,6 @@ import os
 import json
 import base64
 from datetime import datetime, date
-from PIL import Image
 
 # Optional QR code support
 try:
@@ -47,7 +51,7 @@ if "page" in params:
 
 page = st.session_state.page
 
-# THEME COLORS
+# THEME COLORS (flyer style baseline)
 BG_TOP = "#0a0a0a"
 BG_BOTTOM = "#1a1a1a"
 GOLD = "#d4af37"
@@ -57,11 +61,10 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# CSS
+# CSS - Flyer theme + animations + form field styling + slideshow (CSS-only slideshow)
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
-
 :root {{
   color-scheme: dark;
 }}
@@ -72,12 +75,12 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 * {{
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }}
 
 .block-container {{
   padding-top: 40px !important;
-  max-width: 900px !important;
+  max-width: 980px !important;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -87,113 +90,108 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .section {{
-  background: {CARD_BG};
-  padding: 18px;
-  border-radius: 14px;
-  border: 1px solid {BORDER};
-  margin-bottom: 14px;
+  background:{CARD_BG};
+  padding:18px;
+  border-radius:14px;
+  border:1px solid {BORDER};
+  margin-bottom:14px;
 }}
 
 .title {{
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: {GOLD};
-  font-family: 'Playfair Display', serif;
+  font-size:1.6rem;
+  font-weight:700;
+  color:{GOLD};
+  font-family:'Playfair Display', serif;
 }}
 
 .subtitle {{
-  font-size: 1rem;
-  color: {GOLD_SOFT};
-  margin-bottom: 10px;
+  font-size:1rem;
+  color:{GOLD_SOFT};
+  margin-bottom:10px;
 }}
 
 .btn-primary {{
-  display: inline-block;
-  padding: 12px 22px;
+  display:inline-block;
+  padding:12px 22px;
   background: {GOLD};
-  color: {BG_TOP} !important;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 600;
+  color:{BG_TOP} !important;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
   transition: background 0.2s ease;
 }}
-
 .btn-primary:hover {{
-  background: {GOLD_SOFT};
+  background:{GOLD_SOFT};
 }}
 
 .btn-secondary {{
-  display: inline-block;
-  padding: 12px 22px;
-  background: transparent;
-  color: {GOLD_SOFT} !important;
-  border-radius: 999px;
-  border: 1px solid {GOLD};
-  text-decoration: none;
-  font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease;
+  display:inline-block;
+  padding:12px 22px;
+  background:transparent;
+  color:{GOLD} !important;
+  border-radius:999px;
+  border:1px solid {GOLD};
+  text-decoration:none;
+  font-weight:500;
+  transition: background 0.2s ease;
 }}
-
 .btn-secondary:hover {{
-  background: {GOLD};
-  color: {BG_TOP} !important;
+  background: rgba(212,175,55,0.06);
 }}
 
 .whatsapp-btn {{
-  position: fixed;
-  top: 70px;
-  right: 20px;
-  background: #25D366;
-  color: white;
-  padding: 14px 16px;
-  border-radius: 50%;
-  font-size: 22px;
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 9999;
+  position:fixed;
+  top:70px;
+  right:20px;
+  background:#25D366;
+  color:white;
+  padding:14px 16px;
+  border-radius:50%;
+  font-size:22px;
+  text-decoration:none;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  z-index:9999;
 }}
 
 .bottom-nav {{
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: {CARD_BG};
-  border-top: 1px solid {BORDER};
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 0;
-  z-index: 999;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:{CARD_BG};
+  border-top:1px solid {BORDER};
+  display:flex;
+  justify-content:space-around;
+  padding:10px 0;
+  z-index:999;
 }}
 
 .bottom-nav a {{
-  text-decoration: none;
-  font-size: 0.85rem;
-  color: {TEXT};
-  text-align: center;
+  text-decoration:none;
+  font-size:0.85rem;
+  color:{TEXT};
+  text-align:center;
 }}
-
 .bottom-nav a span {{
-  display: block;
-  font-size: 1.2rem;
+  display:block;
+  font-size:1.2rem;
 }}
-
 .bottom-nav a.active {{
-  color: {GOLD};
+  color:{GOLD};
 }}
 
 .class-card {{
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(15,23,42,0.03);
-  border: 1px solid {BORDER};
-  margin-bottom: 8px;
+  padding:10px;
+  border-radius:10px;
+  background:rgba(15,23,42,0.03);
+  border:1px solid {BORDER};
+  margin-bottom:8px;
 }}
 
 .required-label::after {{
   content: " *";
   color: #ff4d4d;
-  font-weight: 900;
+  font-weight: 700;
 }}
 
 @keyframes shake {{
@@ -208,179 +206,177 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .footer {{
-  text-align: center;
-  color: #9ca3af;
-  font-size: 0.8rem;
-  margin-top: 40px;
-  margin-bottom: 60px;
+  text-align:center;
+  color:#9ca3af;
+  font-size:0.8rem;
+  margin-top:40px;
+  margin-bottom:60px;
 }}
 
 .reg-card {{
-  border-radius: 14px;
-  border: 1px solid {BORDER};
-  background: {CARD_BG};
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 10px rgba(15,23,42,0.06);
+  border-radius:14px;
+  border:1px solid {BORDER};
+  background:{CARD_BG};
+  padding:14px 16px;
+  margin-bottom:12px;
+  box-shadow:0 4px 10px rgba(15,23,42,0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
+  cursor:pointer;
 }}
 
 .reg-card:hover {{
   transform: translateY(-4px);
-  box-shadow: 0 10px 24px rgba(15,23,42,0.14);
-  border-color: {GOLD};
+  box-shadow:0 10px 24px rgba(15,23,42,0.14);
+  border-color:{GOLD};
 }}
 
 .reg-card-header {{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 1rem;
-  color: {TEXT};
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:600;
+  font-size:1rem;
+  color:{TEXT};
 }}
-
 .reg-card-sub {{
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-top: 4px;
+  font-size:0.9rem;
+  color:#6b7280;
+  margin-top:4px;
 }}
 
-/* REGISTRATION FORM FIXES - dark fields + gold labels */
+/* === DARK-GOLD FORM THEME FIX === */
 label {{
-  color: {GOLD_SOFT} !important;
+  color:{GOLD_SOFT} !important;
 }}
 
 input, textarea, select {{
-  background: #151515 !important;
+  background:#151515 !important;
+  color:{GOLD_SOFT} !important;
+  border:1px solid {GOLD} !important;
+  border-radius:8px !important;
+}}
+
+input::placeholder, textarea::placeholder {{
+  color:{GOLD_SOFT} !important;
+  opacity:0.85 !important;
+}}
+
+/* Selectbox + Dropdown */
+div[data-baseweb="select"] {{
+  background-color: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
   border-radius: 8px !important;
 }}
-
-input::placeholder,
-textarea::placeholder {{
-  color: {GOLD_SOFT} !important;
-  opacity: 0.4 !important;
-}}
-
-.stTextInput input,
-.stTextArea textarea,
-.stDateInput input {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-/* Force dark theme for selectbox and multiselect */
-.stSelectbox > div > div {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-.stMultiSelect > div > div {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-.stMultiSelect div[data-baseweb="select"] {{
-  background: #151515 !important;
-  color: #f5e8c7 !important;
-  border: 1px solid #d4af37 !important;
-}}
-
-.stMultiSelect div[data-baseweb="select"] * {{
-  background: #151515 !important;
-  color: #f5e8c7 !important;
-}}
-
-div[data-baseweb="select"] {{
-  background: #151515 !important;
-  color: #f5e8c7 !important;
-  border: 1px solid #d4af37 !important;
-}}
-
 div[data-baseweb="select"] * {{
-  color: #f5e8c7 !important;
+  color: {GOLD_SOFT} !important;
 }}
-
 div[data-baseweb="select"] svg {{
-  fill: #d4af37 !important;
+  fill: {GOLD} !important;
 }}
 
-/* Multiselect chips */
+/* Multiselect */
+.stMultiSelect div[data-baseweb="select"] {{
+  background-color: #151515 !important;
+  color: {GOLD_SOFT} !important;
+  border: 1px solid {GOLD} !important;
+}}
+.stMultiSelect div[data-baseweb="select"] * {{
+  color: {GOLD_SOFT} !important;
+}}
 div[data-baseweb="tag"] {{
-  background: #8b0000 !important;
-  color: #f5e8c7 !important;
+  background-color: {RED} !important;
+  color: {GOLD_SOFT} !important;
   border-radius: 6px !important;
+  border: 1px solid {GOLD} !important;
 }}
 
-/* Gold radio circle */
+/* Radio buttons */
+.stRadio label {{
+  color: {GOLD_SOFT} !important;
+  opacity: 1 !important;
+}}
 .stRadio div[role="radio"] {{
-  border: 2px solid #d4af37 !important;
+  background-color: #151515 !important;
+  border: 2px solid {GOLD} !important;
+  border-radius: 50% !important;
 }}
-
 .stRadio div[role="radio"] input[type="radio"] {{
-  accent-color: #d4af37 !important;
+  accent-color: {GOLD} !important;
 }}
 
-/* Logo glow wrapper - enlarged and perfectly centered */
-.logo-wrapper {{
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  width: 100%;
-  margin-bottom: 8px;
+/* Date input */
+.stDateInput input {{
+  background-color: #151515 !important;
+  color: {GOLD_SOFT} !important;
+  border: 1px solid {GOLD} !important;
 }}
 
-.logo-circle {{
-  border-radius: 50%;
-  padding: 10px;
-  box-shadow: 0 0 40px rgba(212,175,55,0.7);
-  background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
-}}
-
-/* Early bird banner */
-.early-banner {{
-  background: {RED};
-  color: {GOLD_SOFT};
-  padding: 8px 16px;
-  border-radius: 999px;
-  text-align: center;
-  font-weight: 600;
-  margin: 10px auto 16px auto;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-  max-width: 900px;
-  border: 1px solid {GOLD};
-}}
-
-/* Slideshow container */
-.slideshow-container {{
+/* CSS-only slideshow: slides stacked and animated via keyframes.
+   Each .slide uses the same animation but with a negative delay so they cycle.
+   Cinematic height: 400px; rounded corners: 12px; full-width inside content column.
+*/
+.slideshow {{
   position: relative;
-  max-width: 100%;
-  height: 260px;
-  margin: 10px auto 0 auto;
+  width: 100%;
+  max-width: 920px;
+  height: 400px;
+  margin: 0 auto 12px auto;
+  border-radius: 12px;
   overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid {GOLD};
+  border:1px solid {BORDER};
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }}
-
-.slideshow-container img {{
+.slide {{
   position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
   opacity: 0;
-  transition: opacity 1s ease-in-out;
+  animation-name: slidefade;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}}
+@keyframes slidefade {{
+  0%   {{ opacity: 0; }}
+  8%   {{ opacity: 1; }}
+  25%  {{ opacity: 1; }}
+  33%  {{ opacity: 0; }}
+  100% {{ opacity: 0; }}
+}}
+.slide-overlay {{
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  color: {GOLD_SOFT};
+  background: rgba(0,0,0,0.35);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(212,175,55,0.08);
+  z-index: 6;
+}}
+/* Make logo image glow when used inline */
+.logo-glow {{
+  display:inline-block;
+  padding:12px;
+  border-radius:999px;
+  box-shadow:0 18px 60px rgba(212,175,55,0.18);
+  background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);
 }}
 
-.slideshow-container img.active {{
-  opacity: 1;
+/* Logo wrapper to ensure perfect centering on desktop and mobile */
+.logo-wrapper {{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  margin-bottom:8px;
+}}
+.logo-circle {{
+  border-radius:50%;
+  padding:10px;
+  box-shadow:0 0 40px rgba(212,175,55,0.7);
+  background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
 }}
 </style>
 """
@@ -425,25 +421,34 @@ def is_early_bird_active():
 
 
 def get_pricing():
-    # Early bird: cheaper 4-class price, 8-class stays 90
     if is_early_bird_active():
         return {
             "four": 50,
             "eight": 90,
-            "enrollment": 50,  # $50/month
+            "enrollment": 50,
         }
     else:
         return {
             "four": 60,
             "eight": 90,
-            "enrollment": 60,  # $60/month
+            "enrollment": 60,
         }
 
 
 log_visit()
 
-# HEADER
+# Helper: convert image file to base64 string
+def _img_to_base64(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode("utf-8")
+    except Exception:
+        return None
+
+# HEADER - centered glowing logo (used on all pages)
 def render_header():
+    # Use a full-width HTML block to ensure perfect centering on desktop + mobile
     if os.path.exists(LOGO_PATH):
         st.markdown(
             "<div class='logo-wrapper'><div class='logo-circle'>",
@@ -487,7 +492,7 @@ def render_early_banner():
         pricing = get_pricing()
         st.markdown(
             f"""
-            <div class="early-banner">
+            <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:{RED}; color:{GOLD_SOFT}; padding:8px 16px; border-radius:999px;">
               ★ Early Bird Offer ★&nbsp;&nbsp;
               First 10 Registrations — Only <b>${pricing["enrollment"]}</b>/month!
               <br>
@@ -501,7 +506,7 @@ def render_early_banner():
 render_header()
 render_early_banner()
 
-# WHATSAPP BUTTON
+# WHATSAPP BUTTON (Top Right)
 st.markdown(
     """
     <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">
@@ -511,7 +516,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# QR CODE
+# QR CODE SECTION
 def render_qr_section():
     if qrcode is None:
         return
@@ -529,39 +534,15 @@ def render_qr_section():
     except Exception:
         st.info("QR generation not available in this environment.")
 
-# HOME PAGE
-def render_home():
-    st.markdown(
-        f"""
-        <div class="section" style="display:flex; flex-direction:column; gap:18px;">
-          <div>
-            <div style="font-size:2rem; font-weight:800; color:{GOLD}; margin-bottom:6px;">
-              Dance. Express. Shine.
-            </div>
-            <div style="font-size:1.05rem; color:#e5e7eb; max-width:520px;">
-              AARA Dance Studio brings Bollywood, Kollywood, Tollywood, Kuthu, Hip Hop and more
-              to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults
-              to find their groove.
-            </div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Slideshow images: slide1.jpg ... slide5.jpg
-    image_paths = []
-    for i in range(1, 6):
-        candidate = f"slide{i}.jpg"
-        if os.path.exists(candidate):
-            image_paths.append(candidate)
-
-    if not image_paths:
+# Build CSS-only slideshow HTML block (no components, no iframe)
+def render_slideshow(slide_paths, per_slide_seconds=6):
+    # If no slides, show placeholder
+    if not slide_paths:
         st.markdown(
-            """
-            <div class="section">
+            f"""
+            <div class="section" style="max-width:920px; margin:0 auto;">
               <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
-              <p style="color:#9ca3af;">Upload slide1.jpg, slide2.jpg, ... in the app root to enable the slideshow.</p>
+              <p style="color:#9ca3af;">Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.</p>
               <div style="margin-top:10px;">
                 <a class="btn-primary" href="/?page=Register">Register Now</a>
                 &nbsp;&nbsp;
@@ -571,83 +552,74 @@ def render_home():
             """,
             unsafe_allow_html=True,
         )
-    else:
-        img_tags = []
-        for idx, path in enumerate(image_paths):
-            try:
-                with open(path, "rb") as f:
-                    data = f.read()
-                b64 = base64.b64encode(data).decode("utf-8")
-                # First image starts active; JS will manage rotation
-                active_class = "active" if idx == 0 else ""
-                img_tags.append(
-                    f'<img src="data:image/jpeg;base64,{b64}" class="{active_class}">'
-                )
-            except Exception:
-                continue
+        return
 
-        if img_tags:
-            slideshow_html = """
-            <div class="section">
-              <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
-              <div class="slideshow-container">
-                {imgs}
-              </div>
-              <div style="margin-top:10px;">
-                <a class="btn-primary" href="/?page=Register">Register Now</a>
-                &nbsp;&nbsp;
-                <a class="btn-primary" href="/?page=Classes">View Classes</a>
-              </div>
-            </div>
-            <script>
-            (function() {{
-              function startSlideshow() {{
-                var container = document.querySelector('.slideshow-container');
-                if (!container) return;
-                var slides = container.querySelectorAll('img');
-                if (!slides || slides.length <= 1) return;
-                var index = 0;
-                // Ensure first slide is active
-                slides.forEach(function(s, i) {{
-                  if (i === 0) s.classList.add('active');
-                  else s.classList.remove('active');
-                }});
-                setInterval(function() {{
-                  slides[index].classList.remove('active');
-                  index = (index + 1) % slides.length;
-                  slides[index].classList.add('active');
-                }}, 6000);
-              }}
-              if (document.readyState === 'complete') {{
-                startSlideshow();
-              }} else {{
-                window.addEventListener('load', startSlideshow);
-              }}
-            }})();
-            </script>
-            """.format(
-                imgs="".join(img_tags)
-            )
-            st.markdown(slideshow_html, unsafe_allow_html=True)
+    # Prepare slides HTML with base64 backgrounds and staggered animation delays.
+    n = len(slide_paths)
+    total_duration = n * per_slide_seconds  # seconds
+    slides_html = []
+    for idx, path in enumerate(slide_paths):
+        b64 = _img_to_base64(path)
+        if b64:
+            bg = f"url('data:image/jpeg;base64,{b64}')"
         else:
-            st.markdown(
-                """
-                <div class="section">
-                  <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
-                  <p style="color:#9ca3af;">No valid slideshow images found.</p>
-                  <div style="margin-top:10px;">
-                    <a class="btn-primary" href="/?page=Register">Register Now</a>
-                    &nbsp;&nbsp;
-                    <a class="btn-primary" href="/?page=Classes">View Classes</a>
-                  </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            # fallback to path (if accessible)
+            bg = f"url('{path}')"
+        # Negative delay ensures sequencing; use seconds with 's'
+        delay = -(idx * per_slide_seconds)
+        slides_html.append(
+            f'<div class="slide" style="background-image: {bg}; animation-duration: {total_duration}s; animation-delay: {delay}s;"></div>'
+        )
+
+    slides_block = "\n".join(slides_html)
+    html = f"""
+    <div class="section" style="padding:0; border-radius:12px; border:0; background:transparent;">
+      <div class="slideshow" id="slideshow">
+        {slides_block}
+        <div class="slide-overlay">Studio Moments</div>
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <a class="btn-primary" href="/?page=Register">Register Now</a>
+        &nbsp;&nbsp;
+        <a class="btn-primary" href="/?page=Classes">View Classes</a>
+      </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+# HOME PAGE - hero + slideshow
+def render_home():
+    # Header already rendered globally; keep hero content
+    st.markdown(
+        f"""
+        <div class="section" style="display:flex; flex-direction:column; gap:18px;">
+          <div>
+            <div style="font-size:2rem; font-weight:800; color:{GOLD}; margin-bottom:6px;">
+              Dance. Express. Shine.
+            </div>
+            <div style="font-size:1.05rem; color:#e5e7eb; max-width:720px;">
+              AARA Dance Studio brings Bollywood, Kollywood, Tollywood, Kuthu, Hip Hop and more
+              to Fate · Rockwall · Dallas. A fun, safe space for kids, teens, and adults to find their groove.
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Collect slideshow images (slide1.jpg ... slide5.jpg)
+    image_paths = []
+    for i in range(1, 6):
+        candidate = f"slide{i}.jpg"
+        if os.path.exists(candidate):
+            image_paths.append(candidate)
+
+    # Render CSS-only slideshow (full-width inside content column)
+    render_slideshow(image_paths, per_slide_seconds=6)
 
     render_qr_section()
 
-# CLASSES PAGE
+# CLASSES PAGE (dynamic pricing)
 def render_classes():
     pricing = get_pricing()
     four = pricing["four"]
@@ -787,7 +759,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE
+# REGISTRATION PAGE - vertical cards + single submit button + safe client-side shake
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
