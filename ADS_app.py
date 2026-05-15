@@ -1,6 +1,6 @@
-# ADS_app.py - Restored (B00 baseline + B01 fixes preserved)
-# Restored from original PDF baseline; cleaned syntax and routing so pages render correctly.
-# Keep B00 and B01 rules: black-gold-red theme, centered logo, slideshow, single Submit Form, dark form fields, gold labels.
+# ADS_app.py - B05 (B00 baseline + B01 fixes preserved; B05 updates: restore top-level navigation, enlarge centered logo, CSS-only autoplay slideshow with fade transitions, safe client-side placeholder highlighting + shake animation)
+# Baseline: B00 theme + B01 fixes (always preserved)
+# Version: B05
 
 import streamlit as st
 import pandas as pd
@@ -73,7 +73,16 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# CSS - Flyer theme + animations + form field styling + slideshow
+# Helper to convert image to base64 for inline embedding
+def _img_to_base64(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode("utf-8")
+    except Exception:
+        return ""
+
+# CSS - Flyer theme + animations + form field styling + slideshow (CSS-only slideshow)
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -92,7 +101,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .block-container {{
   padding-top: 40px !important;
-  max-width: 900px !important;
+  max-width: 980px !important;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -324,13 +333,54 @@ div[data-baseweb="tag"] {{
   border: 1px solid {GOLD} !important;
 }}
 
-/* Slideshow container (kept simple; slideshow uses st.image list) */
+/* CSS-only slideshow: slides stacked and animated via keyframes.
+   Each .slide uses the same animation but with a negative delay so they cycle.
+*/
 .slideshow {{
+  position: relative;
   width: 100%;
-  max-width: 900px;
+  max-width: 920px;
+  height: 380px;
   margin: 0 auto 12px auto;
   border-radius: 12px;
+  overflow: hidden;
   border:1px solid {BORDER};
+}}
+.slide {{
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  animation-name: slidefade;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@keyframes slidefade {{
+  0%   {{ opacity: 0; }}
+  8%   {{ opacity: 1; }}
+  25%  {{ opacity: 1; }}
+  33%  {{ opacity: 0; }}
+  100% {{ opacity: 0; }}
+}}
+.slide-overlay {{
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  color: {GOLD_SOFT};
+  background: rgba(0,0,0,0.35);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(212,175,55,0.08);
+  z-index: 6;
+}}
+/* Make logo image glow when used inline */
+.logo-glow {{
+  display:inline-block;
+  padding:12px;
+  border-radius:999px;
+  box-shadow:0 18px 60px rgba(212,175,55,0.18);
+  background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);
 }}
 </style>
 """
@@ -359,21 +409,32 @@ def read_csv(path):
 
 log_visit()
 
-# HEADER - use st.image for logo (centered)
+# HEADER - enlarged centered logo with glow
 def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if os.path.exists(LOGO_PATH):
-            try:
-                st.image(LOGO_PATH, width=140)
-            except Exception:
-                st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>", unsafe_allow_html=True)
+            b64 = _img_to_base64(LOGO_PATH)
+            if b64:
+                # inline HTML to center and enlarge logo with glow
+                st.markdown(
+                    f"""
+                    <div style="text-align:center;">
+                      <div class="logo-glow">
+                        <img src="data:image/png;base64,{b64}" width="180" style="border-radius:999px; display:block; margin:0 auto;"/>
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.image(LOGO_PATH, width=180)
         else:
-            st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700;'>AARA Dance Studio</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.9rem; font-weight:800; font-family:\"Playfair Display\", serif;'>AARA Dance Studio</div>", unsafe_allow_html=True)
 
     st.markdown(
         f"""
-        <div style="text-align:center; margin-top:6px;">
+        <div style="text-align:center; margin-top:8px;">
           <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
             AARA Dance Studio
           </div>
@@ -398,7 +459,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# QR CODE SECTION (optional)
+# QR CODE SECTION
 def render_qr_section():
     if qrcode is None:
         return
@@ -410,10 +471,47 @@ def render_qr_section():
         buf.seek(0)
         st.image(buf, caption="Scan to open registration page", width=140)
     except Exception:
-        # quietly ignore QR issues
         pass
 
-# HOME PAGE - Hero + slideshow (restored to original simple approach)
+# Build CSS-only slideshow HTML block (no components, no iframe)
+def render_slideshow(slide_paths, per_slide_seconds=6):
+    # If no slides, show placeholder
+    if not slide_paths:
+        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
+        return
+
+    # Prepare slides HTML with base64 backgrounds and staggered animation delays.
+    n = len(slide_paths)
+    total_duration = n * per_slide_seconds  # seconds
+    slides_html = []
+    for idx, path in enumerate(slide_paths):
+        b64 = _img_to_base64(path)
+        if b64:
+            bg = f"url('data:image/png;base64,{b64}')"
+        else:
+            bg = f"url('{path}')"
+        # Each slide uses the same animation but with a negative delay so they appear in sequence.
+        # Negative delay = -(idx * per_slide_seconds) ensures the first visible slide is idx=0.
+        delay = -(idx * per_slide_seconds)
+        slides_html.append(f'<div class="slide" style="background-image: {bg}; animation-duration: {total_duration}s; animation-delay: {delay}s;"></div>')
+
+    slides_block = "\n".join(slides_html)
+    html = f"""
+    <div class="section">
+      <div class="slideshow" id="slideshow">
+        {slides_block}
+        <div class="slide-overlay">Studio Moments</div>
+      </div>
+      <div style="text-align:center; margin-top:8px;">
+        <a class="btn-primary" href="/?page=Register">Register Now</a>
+        &nbsp;&nbsp;
+        <a class="btn-secondary" href="/?page=Classes">View Classes</a>
+      </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+# HOME PAGE - Hero + slideshow
 def render_home():
     render_header()
     st.markdown(
@@ -433,54 +531,25 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow: look for slide1.jpg ... slide5.jpg and any slide*.png/jpeg
-    raw_files = []
+    # Gather slide images
+    slide_paths = []
     for i in range(1, 6):
-        for ext in ("jpg", "jpeg", "png"):
+        for ext in ("jpg", "jpeg", "png", "webp"):
             p = f"slide{i}.{ext}"
             if os.path.exists(p):
-                raw_files.append(p)
+                slide_paths.append(p)
                 break
 
     # fallback to any slide*.jpg/png if not enough named slides
-    if len(raw_files) < 4:
+    if len(slide_paths) < 4:
         extras = sorted(glob.glob("slide*.jpg") + glob.glob("slide*.jpeg") + glob.glob("slide*.png"))
         for p in extras:
-            if p not in raw_files:
-                raw_files.append(p)
-            if len(raw_files) >= 5:
+            if p not in slide_paths:
+                slide_paths.append(p)
+            if len(slide_paths) >= 5:
                 break
 
-    valid_images = []
-    for path in raw_files:
-        try:
-            img = Image.open(path)
-            img.load()
-            valid_images.append(img)
-        except Exception:
-            continue
-
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown("### Studio Moments", unsafe_allow_html=True)
-
-    if valid_images:
-        # Use st.image with a list to show slideshow-like gallery (keeps layout consistent)
-        st.image(valid_images, width=700)
-    else:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
-
-    st.markdown(
-        f"""
-        <div style="margin-top:10px;">
-          <a class="btn-primary" href="/?page=Register">Register Now</a>
-          &nbsp;&nbsp;
-          <a class="btn-primary" href="/?page=Classes">View Classes</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    render_slideshow(slide_paths, per_slide_seconds=6)
     render_qr_section()
 
 # CLASSES PAGE
@@ -596,7 +665,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - Vertical Cards with Form
+# REGISTRATION PAGE - Vertical Cards with Form + safe client-side highlight + shake
 def render_register():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -701,12 +770,17 @@ def render_register():
         # Single submit button labeled "Submit Form"
         submitted = st.form_submit_button("Submit Form")
 
+    # Server-side validation (keeps logic reliable) + safe client-side highlight + shake injection
     if submitted:
         missing = []
+        missing_placeholders = []
+
         if not student_name or not student_name.strip():
             missing.append("Student Name")
+            missing_placeholders.append(required_placeholders["student_name"])
         if not dob or not dob.strip():
             missing.append("Date of Birth / Age")
+            missing_placeholders.append(required_placeholders["dob"])
         if not gender or not gender.strip():
             missing.append("Gender")
         if not enrollment or not enrollment.strip():
@@ -717,15 +791,53 @@ def render_register():
             missing.append("Level")
         if not pref_time or not pref_time.strip():
             missing.append("Preferred Days/Time")
+            missing_placeholders.append(required_placeholders["pref_time"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
         if not signature or not signature.strip():
             missing.append("Parent/Guardian Signature")
+            missing_placeholders.append(required_placeholders["signature"])
         if not sig_date:
             missing.append("Date")
 
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
+
+            # Inject a small, safe JS snippet to highlight placeholders and add shake class.
+            # This script only manipulates styles and classes; it does not change navigation or create iframes.
+            js = f"""
+            <script>
+            (function() {{
+              try {{
+                const missing = {json.dumps(missing_placeholders)};
+                missing.forEach(p => {{
+                  // find inputs by placeholder
+                  const el = document.querySelector('[placeholder="'+p+'"]');
+                  if (el) {{
+                    el.style.borderColor = "#e11d48";
+                    el.style.boxShadow = "0 0 0 4px rgba(225,29,72,0.08)";
+                    // briefly pulse
+                    el.animate([
+                      {{ boxShadow: "0 0 0 0 rgba(225,29,72,0)" }},
+                      {{ boxShadow: "0 0 0 6px rgba(225,29,72,0.08)" }},
+                      {{ boxShadow: "0 0 0 0 rgba(225,29,72,0)" }}
+                    ], {{ duration: 700 }});
+                  }}
+                }});
+                // add shake to the first .section container visible on page
+                const sections = document.querySelectorAll('.section');
+                if (sections.length > 0) {{
+                  const target = sections[0];
+                  target.classList.add('shake');
+                  setTimeout(() => target.classList.remove('shake'), 700);
+                }}
+              }} catch(e) {{
+                console.log('validation highlight error', e);
+              }}
+            }})();
+            </script>
+            """
+            st.markdown(js, unsafe_allow_html=True)
         else:
             record = {
                 "timestamp": datetime.now().isoformat(),
@@ -771,7 +883,7 @@ elif page == "Admin":
 else:
     render_home()
 
-# BOTTOM NAV
+# BOTTOM NAV - top-level anchors (no iframes, no components)
 home = "active" if page == "Home" else ""
 classes = "active" if page == "Classes" else ""
 reg = "active" if page == "Register" else ""
