@@ -199,7 +199,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 .bottom-nav a.active {{
   color:{GOLD};
-}
+}}
 
 .class-card {{
   padding:10px;
