@@ -1,7 +1,6 @@
-
-# ADS_app.py - B02 (B00 baseline + B01 fixes preserved; B02 updates: robust query-param handling to avoid AttributeError)
+# ADS_app.py - B03 (B00 baseline + B01 fixes preserved; B02 fixes + B03 update: robust client-side navigation so page links work)
 # Baseline: B00 theme + B01 fixes (always preserved)
-# Version: B02
+# Version: B03
 
 import streamlit as st
 import pandas as pd
@@ -40,7 +39,7 @@ if "page" not in st.session_state:
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-# Robust query-params retrieval: some Streamlit versions/environments may not expose experimental_get_query_params
+# Robust query-params retrieval: handle different Streamlit versions/environments
 params = {}
 _get_qs = getattr(st, "experimental_get_query_params", None)
 if callable(_get_qs):
@@ -49,7 +48,6 @@ if callable(_get_qs):
     except Exception:
         params = {}
 else:
-    # Fallback: try the newer attribute if available, else empty dict
     _qp = getattr(st, "query_params", None)
     if isinstance(_qp, dict):
         params = _qp
@@ -57,7 +55,6 @@ else:
         params = {}
 
 if "page" in params:
-    # params may be dict of lists; handle both forms
     p = params.get("page")
     if isinstance(p, list) and p:
         st.session_state.page = p[0]
@@ -202,7 +199,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 .bottom-nav a.active {{
   color:{GOLD};
-}}
+}
 
 .class-card {{
   padding:10px;
@@ -401,7 +398,6 @@ def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if os.path.exists(LOGO_PATH):
-            # center logo with gold glow via inline HTML wrapper
             b64 = _img_to_base64(LOGO_PATH)
             if b64:
                 st.markdown(
@@ -509,7 +505,6 @@ def render_home():
         for idx, path in enumerate(slide_paths):
             b64 = _img_to_base64(path)
             if not b64:
-                # fallback to direct file reference if base64 fails
                 style = f"background-image: url('{path}');"
             else:
                 style = f"background-image: url('data:image/png;base64,{b64}');"
@@ -517,6 +512,7 @@ def render_home():
             slides_html.append(f'<div class="slide {active}" style="{style}"></div>')
 
         slides_block = "\n".join(slides_html)
+        # Use onclick navigation to ensure query param updates and page routing works across environments
         slideshow_html = f"""
         <div class="section">
           <div class="slideshow" id="slideshow">
@@ -524,9 +520,9 @@ def render_home():
             <div class="slide-overlay">Studio Moments</div>
           </div>
           <div style="text-align:center; margin-top:8px;">
-            <a class="btn-primary" href="/?page=Register">Register Now</a>
+            <a class="btn-primary" href="#" onclick="window.location.search='?page=Register';return false;">Register Now</a>
             &nbsp;&nbsp;
-            <a class="btn-secondary" href="/?page=Classes">View Classes</a>
+            <a class="btn-secondary" href="#" onclick="window.location.search='?page=Classes';return false;">View Classes</a>
           </div>
         </div>
 
@@ -597,7 +593,7 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
+    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="#" onclick="window.location.search=\'?page=Register\';return false;">Register Now</a></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
@@ -875,7 +871,6 @@ elif page == "Register":
 elif page == "Admin":
     render_admin()
 else:
-    # default to home
     render_home()
 
 # BOTTOM NAV
@@ -885,14 +880,15 @@ reg = "active" if page == "Register" else ""
 about = "active" if page == "About" else ""
 admin = "active" if page == "Admin" else ""
 
+# Use onclick navigation to reliably update query params and trigger routing
 st.markdown(
     f"""
     <div class="bottom-nav">
-      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
-      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
-      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
-      <a class="{about}" href="/?page=About"><span>ℹ️</span>About</a>
-      <a class="{admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
+      <a class="{home}" href="#" onclick="window.location.search='?page=Home';return false;"><span>🏠</span>Home</a>
+      <a class="{classes}" href="#" onclick="window.location.search='?page=Classes';return false;"><span>📚</span>Classes</a>
+      <a class="{reg}" href="#" onclick="window.location.search='?page=Register';return false;"><span>📝</span>Register</a>
+      <a class="{about}" href="#" onclick="window.location.search='?page=About';return false;"><span>ℹ️</span>About</a>
+      <a class="{admin}" href="#" onclick="window.location.search='?page=Admin';return false;"><span>🔒</span>Admin</a>
     </div>
     """,
     unsafe_allow_html=True,
