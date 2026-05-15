@@ -1,4 +1,5 @@
-# ADS_app.py - B02 (B00 baseline + B01 fixes preserved; B02 updates: cleaned syntax, slideshow autoplay, single submit button label "Submit Form", robust validation, admin CSV export)
+
+# ADS_app.py - B02 (B00 baseline + B01 fixes preserved; B02 updates: robust query-param handling to avoid AttributeError)
 # Baseline: B00 theme + B01 fixes (always preserved)
 # Version: B02
 
@@ -10,6 +11,7 @@ import glob
 from datetime import datetime, date
 from PIL import Image
 import io
+import base64
 
 # Optional dependency
 try:
@@ -38,9 +40,29 @@ if "page" not in st.session_state:
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
-params = st.experimental_get_query_params()
+# Robust query-params retrieval: some Streamlit versions/environments may not expose experimental_get_query_params
+params = {}
+_get_qs = getattr(st, "experimental_get_query_params", None)
+if callable(_get_qs):
+    try:
+        params = _get_qs() or {}
+    except Exception:
+        params = {}
+else:
+    # Fallback: try the newer attribute if available, else empty dict
+    _qp = getattr(st, "query_params", None)
+    if isinstance(_qp, dict):
+        params = _qp
+    else:
+        params = {}
+
 if "page" in params:
-    st.session_state.page = params["page"][0]
+    # params may be dict of lists; handle both forms
+    p = params.get("page")
+    if isinstance(p, list) and p:
+        st.session_state.page = p[0]
+    elif isinstance(p, str):
+        st.session_state.page = p
 
 page = st.session_state.page
 
@@ -53,6 +75,15 @@ RED = "#8b0000"
 TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
+
+# Helper to convert image to base64 for inline embedding (keeps logo rendering robust)
+def _img_to_base64(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode("utf-8")
+    except Exception:
+        return ""
 
 # CSS - Flyer theme + animations + form field styling + slideshow
 CSS = f"""
@@ -371,16 +402,20 @@ def render_header():
     with col2:
         if os.path.exists(LOGO_PATH):
             # center logo with gold glow via inline HTML wrapper
-            st.markdown(
-                f"""
-                <div style="text-align:center;">
-                  <div style="display:inline-block; padding:12px; border-radius:999px; box-shadow:0 8px 30px rgba(212,175,55,0.18); background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);">
-                    <img src="data:image/png;base64,{_img_to_base64(LOGO_PATH)}" width="120" style="border-radius:999px;"/>
-                  </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            b64 = _img_to_base64(LOGO_PATH)
+            if b64:
+                st.markdown(
+                    f"""
+                    <div style="text-align:center;">
+                      <div style="display:inline-block; padding:12px; border-radius:999px; box-shadow:0 8px 30px rgba(212,175,55,0.18); background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);">
+                        <img src="data:image/png;base64,{b64}" width="120" style="border-radius:999px;"/>
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.image(LOGO_PATH, width=120)
         else:
             st.markdown(
                 f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700; font-family:\"Playfair Display\", serif;'>AARA Dance Studio</div>",
@@ -404,16 +439,6 @@ def render_header():
         unsafe_allow_html=True,
     )
 
-# Helper to convert image to base64 for inline embedding (keeps logo rendering robust)
-def _img_to_base64(path):
-    import base64
-    try:
-        with open(path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode("utf-8")
-    except Exception:
-        return ""
-
 # WHATSAPP BUTTON (Top Right)
 st.markdown(
     f"""
@@ -428,11 +453,7 @@ st.markdown(
 def render_qr_section():
     if qrcode is None:
         return
-    # Build registration URL from current page base
-    base = st.experimental_get_query_params()
-    # Use current host path if available; fallback to root
     try:
-        # Attempt to build a relative link to the Register page
         reg_url = "/?page=Register"
         qr_img = qrcode.make(reg_url)
         buf = io.BytesIO()
@@ -487,7 +508,11 @@ def render_home():
         slides_html = []
         for idx, path in enumerate(slide_paths):
             b64 = _img_to_base64(path)
-            style = f"background-image: url('data:image/png;base64,{b64}');"
+            if not b64:
+                # fallback to direct file reference if base64 fails
+                style = f"background-image: url('{path}');"
+            else:
+                style = f"background-image: url('data:image/png;base64,{b64}');"
             active = "active" if idx == 0 else ""
             slides_html.append(f'<div class="slide {active}" style="{style}"></div>')
 
