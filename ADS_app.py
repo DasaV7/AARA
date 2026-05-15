@@ -1,11 +1,12 @@
-# ADS_app.py - B02
-# Baseline: B00 theme + B01 fixes + B02 updates
-# B02 changes:
-# - Logo enlarged further and centered with gold glow
-# - Reintroduced a safe, CSS-only slideshow with autoplay and fade transitions (4–5 images, 6s per slide)
-# - Reintroduced client-side shake animation and placeholder highlighting in a way that does not break navigation
-# - Kept single submit button labeled “Submit Form”
-# - All B00 and B01 rules preserved
+# ADS_app.py - B03
+# Baseline: B00 theme + B01 fixes + B02 + B03 updates
+# B03 changes:
+# - Logo enlarged further and centered (via shared header on all pages)
+# - Slideshow updated to use <img> elements with CSS-only autoplay + fade transitions (4 slides, 6s each)
+# - Selectbox and multiselect backgrounds forced to dark theme (no Streamlit light defaults)
+# - Required-field red * placed next to each required label via custom HTML labels
+# - Single submit button labeled “Submit Form” retained
+# - Client-side shake + placeholder highlighting kept, without breaking navigation
 
 import streamlit as st
 import pandas as pd
@@ -75,7 +76,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .block-container {{
-  padding-top: 40px !important; /* prevents banner clipping */
+  padding-top: 40px !important;
   max-width: 900px !important;
   animation: fadeIn 0.4s ease;
 }}
@@ -266,49 +267,25 @@ textarea::placeholder {{
 
 .stTextInput input,
 .stTextArea textarea,
-.stSelectbox select,
 .stDateInput input {{
   background: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
 }}
 
-.stSelectbox div[data-baseweb="select"] {{
+/* Force dark theme for selectbox and multiselect (no light defaults) */
+.stSelectbox > div > div {{
   background: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
 }}
 
-.stSelectbox svg {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  fill: {GOLD} !important;
-}}
-
-.stMultiSelect div {{
+.stMultiSelect > div > div {{
   background: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
 }}
 
-.stRadio label,
-.stRadio div[role="radio"] {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-}}
-
-.stRadio div[role="radio"] input[type="radio"] {{
-  background: #151515 !important;
-  accent-color: {GOLD} !important;
-}}
-
-.stDateInput input {{
-  background: #151515 !important;
-  color: {GOLD_SOFT} !important;
-  border: 1px solid {GOLD} !important;
-}}
-
-/* FORCE dark theme for selectbox, multiselect, dropdown */
 div[data-baseweb="select"] {{
   background: #151515 !important;
   color: #f5e8c7 !important;
@@ -339,7 +316,7 @@ div[data-baseweb="tag"] {{
   accent-color: #d4af37 !important;
 }}
 
-/* Logo glow wrapper */
+/* Logo glow wrapper - enlarged and centered */
 .logo-wrapper {{
   display: flex;
   justify-content: center;
@@ -349,12 +326,12 @@ div[data-baseweb="tag"] {{
 
 .logo-circle {{
   border-radius: 50%;
-  padding: 8px;
-  box-shadow: 0 0 30px rgba(212,175,55,0.55);
+  padding: 10px;
+  box-shadow: 0 0 40px rgba(212,175,55,0.7);
   background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
 }}
 
-/* Slideshow banner - CSS-only autoplay with fade transitions */
+/* Slideshow banner - CSS-only autoplay with fade transitions (4 slides, 6s each) */
 .slideshow-container {{
   position: relative;
   max-width: 100%;
@@ -370,8 +347,6 @@ div[data-baseweb="tag"] {{
   position: absolute;
   width: 100%;
   height: 100%;
-  background-position: center center;
-  background-size: cover;
   opacity: 0;
   animation-name: fadeSlide;
   animation-duration: 24s;
@@ -379,10 +354,16 @@ div[data-baseweb="tag"] {{
   animation-iteration-count: infinite;
 }}
 
-.slide1 {{ background-image: url('slide1.jpg'); animation-delay: 0s; }}
-.slide2 {{ background-image: url('slide2.jpg'); animation-delay: 6s; }}
-.slide3 {{ background-image: url('slide3.jpg'); animation-delay: 12s; }}
-.slide4 {{ background-image: url('slide4.jpg'); animation-delay: 18s; }}
+.slide img {{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}}
+
+.slide1 {{ animation-delay: 0s; }}
+.slide2 {{ animation-delay: 6s; }}
+.slide3 {{ animation-delay: 12s; }}
+.slide4 {{ animation-delay: 18s; }}
 
 @keyframes fadeSlide {{
   0%   {{ opacity: 0; }}
@@ -421,7 +402,7 @@ def read_csv(path):
 
 log_visit()
 
-# HEADER - centered glowing logo
+# HEADER - centered glowing logo (used on all pages)
 def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -430,7 +411,8 @@ def render_header():
                 "<div class='logo-wrapper'><div class='logo-circle'>",
                 unsafe_allow_html=True,
             )
-            st.image(LOGO_PATH, width=260)
+            # Enlarged logo
+            st.image(LOGO_PATH, width=320)
             st.markdown(
                 "</div></div>",
                 unsafe_allow_html=True,
@@ -513,16 +495,17 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Slideshow banner (CSS-only autoplay)
+    # Slideshow banner (CSS-only autoplay, fade transitions)
+    # Requires slide1.jpg, slide2.jpg, slide3.jpg, slide4.jpg in the app root
     st.markdown(
         """
         <div class="section">
           <h3 style="margin-top:0; margin-bottom:8px;">Studio Moments</h3>
           <div class="slideshow-container">
-            <div class="slide slide1"></div>
-            <div class="slide slide2"></div>
-            <div class="slide slide3"></div>
-            <div class="slide slide4"></div>
+            <div class="slide slide1"><img src="slide1.jpg" alt="Studio slide 1"></div>
+            <div class="slide slide2"><img src="slide2.jpg" alt="Studio slide 2"></div>
+            <div class="slide slide3"><img src="slide3.jpg" alt="Studio slide 3"></div>
+            <div class="slide slide4"><img src="slide4.jpg" alt="Studio slide 4"></div>
           </div>
           <div style="margin-top:10px;">
             <a class="btn-primary" href="/?page=Register">Register Now</a>
@@ -704,34 +687,49 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
+
+        # Custom labels with red * next to text
+        st.markdown(
+            '<label class="required-label">Student Name</label>',
+            unsafe_allow_html=True,
+        )
         student_name = st.text_input(
-            "Student Name",
+            "",
             key="student_name",
             placeholder=required_placeholders["student_name"],
-            label_visibility="visible",
+            label_visibility="collapsed",
         )
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
+        st.markdown(
+            '<label class="required-label">Date of Birth (Age)</label>',
+            unsafe_allow_html=True,
+        )
         dob = st.text_input(
-            "Date of Birth (Age)",
+            "",
             key="dob",
             placeholder=required_placeholders["dob"],
-            label_visibility="visible",
+            label_visibility="collapsed",
         )
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
+        st.markdown(
+            '<label class="required-label">Gender</label>',
+            unsafe_allow_html=True,
+        )
         gender = st.selectbox(
-            "Gender",
+            "",
             ["", "Female", "Male", "Other", "Prefer not to say"],
             key="gender",
-            label_visibility="visible",
+            label_visibility="collapsed",
         )
-        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
+        st.markdown(
+            '<label>School Name (optional)</label>',
+            unsafe_allow_html=True,
+        )
         school = st.text_input(
-            "School Name (optional)",
+            "",
             key="school",
-            label_visibility="visible",
+            label_visibility="collapsed",
         )
 
         # Card 2 - Class Details
@@ -749,28 +747,71 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
+
+        st.markdown(
+            '<label class="required-label">Enrollment Type</label>',
+            unsafe_allow_html=True,
+        )
         enrollment = st.selectbox(
-            "Enrollment Type",
+            "",
             ["", "Regular ($50/month)", "Drop-in ($15/session)"],
             key="enroll",
+            label_visibility="collapsed",
         )
-        mode = st.radio("Mode", ["In-Person", "Online"], key="mode")
+
+        st.markdown(
+            '<label class="required-label">Mode</label>',
+            unsafe_allow_html=True,
+        )
+        mode = st.radio(
+            "",
+            ["In-Person", "Online"],
+            key="mode",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Workshops</label>',
+            unsafe_allow_html=True,
+        )
         workshops = st.multiselect(
-            "Workshops",
+            "",
             ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"],
             key="workshops",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label class="required-label">Level</label>',
+            unsafe_allow_html=True,
         )
         level = st.selectbox(
-            "Level",
+            "",
             ["", "Beginner", "Intermediate", "Advanced"],
             key="level",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label class="required-label">Preferred Days/Time</label>',
+            unsafe_allow_html=True,
         )
         pref_time = st.text_input(
-            "Preferred Days/Time",
+            "",
             key="pref_time",
             placeholder=required_placeholders["pref_time"],
+            label_visibility="collapsed",
         )
-        experience = st.text_area("Previous Experience", key="experience")
+
+        st.markdown(
+            '<label>Previous Experience</label>',
+            unsafe_allow_html=True,
+        )
+        experience = st.text_area(
+            "",
+            key="experience",
+            label_visibility="collapsed",
+        )
 
         # Card 3 - Parent & Emergency Contact
         st.markdown(
@@ -787,13 +828,76 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
-        parent = st.text_input("Parent/Guardian Name", key="parent")
-        phone = st.text_input("Phone Number", key="phone")
-        email = st.text_input("Email Address", key="email")
-        address = st.text_area("Address", key="address")
-        em_name = st.text_input("Emergency Contact Name", key="em_name")
-        em_rel = st.text_input("Relationship", key="em_rel")
-        em_phone = st.text_input("Emergency Phone", key="em_phone")
+
+        st.markdown(
+            '<label>Parent/Guardian Name</label>',
+            unsafe_allow_html=True,
+        )
+        parent = st.text_input(
+            "",
+            key="parent",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Phone Number</label>',
+            unsafe_allow_html=True,
+        )
+        phone = st.text_input(
+            "",
+            key="phone",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Email Address</label>',
+            unsafe_allow_html=True,
+        )
+        email = st.text_input(
+            "",
+            key="email",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Address</label>',
+            unsafe_allow_html=True,
+        )
+        address = st.text_area(
+            "",
+            key="address",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Emergency Contact Name</label>',
+            unsafe_allow_html=True,
+        )
+        em_name = st.text_input(
+            "",
+            key="em_name",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Relationship</label>',
+            unsafe_allow_html=True,
+        )
+        em_rel = st.text_input(
+            "",
+            key="em_rel",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label>Emergency Phone</label>',
+            unsafe_allow_html=True,
+        )
+        em_phone = st.text_input(
+            "",
+            key="em_phone",
+            label_visibility="collapsed",
+        )
 
         # Card 4 - Medical & Consent
         st.markdown(
@@ -810,18 +914,49 @@ def render_register():
             """,
             unsafe_allow_html=True,
         )
-        medical = st.text_area("Allergies / Injuries / Conditions", key="medical")
+
+        st.markdown(
+            '<label>Allergies / Injuries / Conditions</label>',
+            unsafe_allow_html=True,
+        )
+        medical = st.text_area(
+            "",
+            key="medical",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label class="required-label">Allow photo/video for promotions?</label>',
+            unsafe_allow_html=True,
+        )
         consent = st.radio(
-            "Allow photo/video for promotions?",
+            "",
             ["", "Yes", "No"],
             key="consent",
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            '<label class="required-label">Parent/Guardian Signature</label>',
+            unsafe_allow_html=True,
         )
         signature = st.text_input(
-            "Parent/Guardian Signature",
+            "",
             key="signature",
             placeholder=required_placeholders["signature"],
+            label_visibility="collapsed",
         )
-        sig_date = st.date_input("Date", value=date.today(), key="sig_date")
+
+        st.markdown(
+            '<label class="required-label">Date</label>',
+            unsafe_allow_html=True,
+        )
+        sig_date = st.date_input(
+            "",
+            value=date.today(),
+            key="sig_date",
+            label_visibility="collapsed",
+        )
 
         submitted = st.form_submit_button("Submit Form")
 
