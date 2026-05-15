@@ -1,10 +1,6 @@
-# ADS_app.py - B08 (B00 baseline + B01 fixes preserved; B07 fixes + B08 update)
-# Fixes:
-# - Bottom nav anchors now reliably navigate to each page (onclick sets query string)
-# - Selectbox / Multiselect / Radio styling improved to match dark-gold theme
-# - Required asterisk placed inline next to labels (rendered label + hidden input labels)
-# - Keeps enlarged centered logo, CSS-only slideshow, and safe client-side validation
-# Version: B08
+# ADS_app.py - RESTORED (B00 baseline + B01 fixes preserved)
+# Restored from original PDF baseline (cleaned, syntax-fixed, reliable navigation)
+# Version: RESTORE_FROM_PDF
 
 import streamlit as st
 import pandas as pd
@@ -87,7 +83,6 @@ def _img_to_base64(path):
         return ""
 
 # CSS - Flyer theme + animations + form field styling + slideshow
-# Added selectors for Streamlit select/multiselect and radio label visibility fixes.
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -106,7 +101,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .block-container {{
   padding-top: 40px !important;
-  max-width: 980px !important;
+  max-width: 900px !important;
   animation: fadeIn 0.4s ease;
 }}
 
@@ -197,8 +192,6 @@ html, body, [data-testid="stAppViewContainer"] {{
   font-size:0.85rem;
   color:{TEXT};
   text-align:center;
-  padding:6px 10px;
-  border-radius:8px;
 }}
 .bottom-nav a span {{
   display:block;
@@ -206,8 +199,6 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 .bottom-nav a.active {{
   color:{GOLD};
-  background: rgba(212,175,55,0.06);
-  border: 1px solid rgba(212,175,55,0.08);
 }}
 
 .class-card {{
@@ -218,16 +209,10 @@ html, body, [data-testid="stAppViewContainer"] {{
   margin-bottom:8px;
 }}
 
-.required-inline {{
+.required-label::after {{
+  content: " *";
   color: #ff4d4d;
   font-weight: 700;
-  margin-left:6px;
-  vertical-align:middle;
-  display:inline-block;
-}}
-
-.required-label-placeholder {{
-  display:none;
 }}
 
 @keyframes shake {{
@@ -285,7 +270,6 @@ label {{
   color:{GOLD_SOFT} !important;
 }}
 
-/* Generic inputs */
 input, textarea, select {{
   background:#151515 !important;
   color:{GOLD_SOFT} !important;
@@ -298,31 +282,39 @@ input::placeholder, textarea::placeholder {{
   opacity:0.85 !important;
 }}
 
-/* Streamlit selectbox / multiselect specific fixes */
-.stSelectbox, .stMultiSelect, .stSelectbox > div, .stMultiSelect > div {{
+/* Selectbox + Dropdown */
+div[data-baseweb="select"] {{
   background-color: #151515 !important;
   color: {GOLD_SOFT} !important;
   border: 1px solid {GOLD} !important;
   border-radius: 8px !important;
 }}
-/* Dropdown list items */
-div[role="listbox"] {{
-  background: #151515 !important;
+div[data-baseweb="select"] * {{
   color: {GOLD_SOFT} !important;
 }}
+div[data-baseweb="select"] svg {{
+  fill: {GOLD} !important;
+}}
 
-/* Tag pills for multiselect */
-div[data-baseweb="tag"], .stMultiSelect div[data-baseweb="tag"] {{
+/* Multiselect */
+.stMultiSelect div[data-baseweb="select"] {{
+  background-color: #151515 !important;
+  color: {GOLD_SOFT} !important;
+  border: 1px solid {GOLD} !important;
+}}
+.stMultiSelect div[data-baseweb="select"] * {{
+  color: {GOLD_SOFT} !important;
+}}
+div[data-baseweb="tag"] {{
   background-color: {RED} !important;
   color: {GOLD_SOFT} !important;
   border-radius: 6px !important;
   border: 1px solid {GOLD} !important;
 }}
 
-/* Radio buttons: make labels more visible */
+/* Radio buttons */
 .stRadio label {{
   color: {GOLD_SOFT} !important;
-  font-weight:600;
   opacity: 1 !important;
 }}
 .stRadio div[role="radio"] {{
@@ -341,34 +333,28 @@ div[data-baseweb="tag"], .stMultiSelect div[data-baseweb="tag"] {{
   border: 1px solid {GOLD} !important;
 }}
 
-/* CSS-only slideshow */
+/* Slideshow container */
 .slideshow {{
   position: relative;
   width: 100%;
-  max-width: 920px;
-  height: 380px;
-  margin: 0 auto 12px auto;
-  border-radius: 12px;
+  max-width: 900px;
+  height: 360px;
   overflow: hidden;
+  border-radius: 12px;
   border:1px solid {BORDER};
+  margin: 0 auto 12px auto;
 }}
 .slide {{
   position: absolute;
-  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1s ease;
   background-size: cover;
   background-position: center;
-  opacity: 0;
-  animation-name: slidefade;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
 }}
-
-@keyframes slidefade {{
-  0%   {{ opacity: 0; }}
-  8%   {{ opacity: 1; }}
-  25%  {{ opacity: 1; }}
-  33%  {{ opacity: 0; }}
-  100% {{ opacity: 0; }}
+.slide.active {{
+  opacity: 1;
 }}
 .slide-overlay {{
   position: absolute;
@@ -379,17 +365,17 @@ div[data-baseweb="tag"], .stMultiSelect div[data-baseweb="tag"] {{
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid rgba(212,175,55,0.08);
-  z-index: 6;
 }}
 .logo-glow {{
   display:inline-block;
   padding:12px;
   border-radius:999px;
-  box-shadow:0 18px 60px rgba(212,175,55,0.18);
+  box-shadow:0 8px 30px rgba(212,175,55,0.18);
   background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);
 }}
 </style>
 """
+
 st.markdown(CSS, unsafe_allow_html=True)
 
 # UTILITIES
@@ -414,22 +400,7 @@ def read_csv(path):
 
 log_visit()
 
-# NAVIGATION helper using Streamlit API (reliable)
-def navigate_to(page_name: str):
-    """
-    Set the page in session state and update query params.
-    Do NOT call st.experimental_rerun here; Streamlit will rerun on user interaction.
-    """
-    try:
-        st.session_state.page = page_name
-    except Exception:
-        pass
-    try:
-        st.experimental_set_query_params(page=page_name)
-    except Exception:
-        pass
-
-# HEADER - enlarged centered logo with glow
+# HEADER - use st.image for logo (centered, enlarged, glow)
 def render_header():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -440,20 +411,23 @@ def render_header():
                     f"""
                     <div style="text-align:center;">
                       <div class="logo-glow">
-                        <img src="data:image/png;base64,{b64}" width="180" style="border-radius:999px; display:block; margin:0 auto;"/>
+                        <img src="data:image/png;base64,{b64}" width="160" style="border-radius:999px; display:block; margin:0 auto;"/>
                       </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
             else:
-                st.image(LOGO_PATH, width=180)
+                st.image(LOGO_PATH, width=160)
         else:
-            st.markdown(f"<div style='text-align:center; color:{GOLD}; font-size:1.9rem; font-weight:800; font-family:\"Playfair Display\", serif;'>AARA Dance Studio</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='text-align:center; color:{GOLD}; font-size:1.6rem; font-weight:700; font-family:\"Playfair Display\", serif;'>AARA Dance Studio</div>",
+                unsafe_allow_html=True,
+            )
 
     st.markdown(
         f"""
-        <div style="text-align:center; margin-top:8px;">
+        <div style="text-align:center; margin-top:6px;">
           <div style="font-size:1.9rem; font-weight:700; color:{GOLD}; font-family:'Playfair Display', serif;">
             AARA Dance Studio
           </div>
@@ -492,44 +466,7 @@ def render_qr_section():
     except Exception:
         pass
 
-# Build CSS-only slideshow HTML block
-def render_slideshow(slide_paths, per_slide_seconds=6):
-    if not slide_paths:
-        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
-        return
-
-    n = len(slide_paths)
-    total_duration = n * per_slide_seconds
-    slides_html = []
-    for idx, path in enumerate(slide_paths):
-        b64 = _img_to_base64(path)
-        if b64:
-            bg = f"url('data:image/png;base64,{b64}')"
-        else:
-            bg = f"url('{path}')"
-        delay = -(idx * per_slide_seconds)
-        slides_html.append(f'<div class="slide" style="background-image: {bg}; animation-duration: {total_duration}s; animation-delay: {delay}s;"></div>')
-
-    slides_block = "\n".join(slides_html)
-    html = f"""
-    <div class="section">
-      <div class="slideshow" id="slideshow">
-        {slides_block}
-        <div class="slide-overlay">Studio Moments</div>
-      </div>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-    # Hero CTA buttons implemented as Streamlit buttons for reliable navigation,
-    # but visually spaced to appear inline.
-    c1, c2, c3, c4, c5 = st.columns([1, 0.6, 0.6, 0.6, 1])
-    if c2.button("Register Now"):
-        navigate_to("Register")
-    if c3.button("View Classes"):
-        navigate_to("Classes")
-
-# HOME PAGE - Hero + slideshow
+# HOME PAGE - Hero + slideshow (st.image list fallback)
 def render_home():
     render_header()
     st.markdown(
@@ -549,15 +486,16 @@ def render_home():
         unsafe_allow_html=True,
     )
 
-    # Gather slide images
+    # Slideshow: gather slide images named slide1.jpg ... slide5.jpg
     slide_paths = []
     for i in range(1, 6):
-        for ext in ("jpg", "jpeg", "png", "webp"):
+        for ext in ("jpg", "jpeg", "png"):
             p = f"slide{i}.{ext}"
             if os.path.exists(p):
                 slide_paths.append(p)
                 break
 
+    # If fewer than 4 slides found, also include any slide*.jpg/png files
     if len(slide_paths) < 4:
         extras = sorted(glob.glob("slide*.jpg") + glob.glob("slide*.jpeg") + glob.glob("slide*.png"))
         for p in extras:
@@ -566,7 +504,36 @@ def render_home():
             if len(slide_paths) >= 5:
                 break
 
-    render_slideshow(slide_paths, per_slide_seconds=6)
+    valid_images = []
+    for path in slide_paths:
+        try:
+            img = Image.open(path)
+            img.load()
+            valid_images.append(img)
+        except Exception:
+            continue
+
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Studio Moments", unsafe_allow_html=True)
+
+    if valid_images:
+        # Use st.image with a list to show slideshow-like gallery (keeps layout consistent)
+        st.image(valid_images, width=700)
+    else:
+        st.info("Upload slide1.jpg, slide2.jpg, slide3.jpg (etc.) in the root directory for a slideshow.")
+
+    st.markdown(
+        f"""
+        <div style="margin-top:10px;">
+          <a class="btn-primary" href="/?page=Register">Register Now</a>
+          &nbsp;&nbsp;
+          <a class="btn-primary" href="/?page=Classes">View Classes</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
     render_qr_section()
 
 # CLASSES PAGE
@@ -612,16 +579,13 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    if st.button("Register Now", key="classes_register"):
-        navigate_to("Register")
-
+    st.markdown('<div style="margin-top:8px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
 def render_about():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
-
     st.markdown(
         f"""
         <div style="text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:10px; color:{GOLD};">
@@ -662,6 +626,7 @@ def render_admin():
     if not st.session_state.admin_authenticated:
         pwd = st.text_input("Enter admin password", type="password", key="admin_pwd")
         if st.button("Authenticate"):
+            # Simple password check - in production, replace with secure auth
             if pwd == "adminpass":
                 st.session_state.admin_authenticated = True
                 st.success("Authenticated.")
@@ -683,12 +648,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - Vertical Cards with Form + safe client-side highlight + shake
-# Important: render labels as HTML (with inline required asterisk) and hide Streamlit's native label
-def _label_html(text: str, required: bool = False):
-    req = '<span class="required-inline">*</span>' if required else ''
-    return f'<div style="margin-bottom:6px; color:{GOLD_SOFT}; font-weight:600;">{text}{req}</div>'
-
+# REGISTRATION PAGE - Vertical Cards with Hover + Form
 def render_register():
     render_header()
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -711,27 +671,28 @@ def render_register():
                 <span>Student Information</span>
                 <span></span>
               </div>
-              <div class="reg-card-sub">Basic details about the student.</div>
+              <div class="reg-card-sub">
+                Basic details about the student.
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+        # Render labels in gold and inputs with dark background
+        student_name = st.text_input("Student Name", key="student_name",
+                                     placeholder=required_placeholders["student_name"],
+                                     label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
-        # Student Name (required)
-        st.markdown(_label_html("Student Name", required=True), unsafe_allow_html=True)
-        student_name = st.text_input("", key="student_name", placeholder=required_placeholders["student_name"], label_visibility="hidden")
+        dob = st.text_input("Date of Birth (Age)", key="dob",
+                            placeholder=required_placeholders["dob"], label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
-        # DOB (required)
-        st.markdown(_label_html("Date of Birth (Age)", required=True), unsafe_allow_html=True)
-        dob = st.text_input("", key="dob", placeholder=required_placeholders["dob"], label_visibility="hidden")
+        gender = st.selectbox("Gender", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender", label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
-        # Gender (required)
-        st.markdown(_label_html("Gender", required=True), unsafe_allow_html=True)
-        gender = st.selectbox("", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender", label_visibility="hidden")
-
-        # School (optional)
-        st.markdown(_label_html("School Name (optional)", required=False), unsafe_allow_html=True)
-        school = st.text_input("", key="school", label_visibility="hidden")
+        school = st.text_input("School Name (optional)", key="school", label_visibility="visible")
+        st.markdown('<span class="required-label"></span>', unsafe_allow_html=True)
 
         # Card 2 - Class Details
         st.markdown(
@@ -741,29 +702,28 @@ def render_register():
                 <span>Class Details</span>
                 <span></span>
               </div>
-              <div class="reg-card-sub">Choose how and when you'd like to dance.</div>
+              <div class="reg-card-sub">
+                Choose how and when you'd like to dance.
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown(_label_html("Enrollment Type", required=True), unsafe_allow_html=True)
-        enrollment = st.selectbox("", ["", "Regular ($50/month)", "Drop-in ($15/session)"], key="enroll", label_visibility="hidden")
-
-        st.markdown(_label_html("Mode", required=True), unsafe_allow_html=True)
-        mode = st.radio("", ["In-Person", "Online"], key="mode", label_visibility="hidden")
-
-        st.markdown(_label_html("Workshops", required=False), unsafe_allow_html=True)
-        workshops = st.multiselect("", ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"], key="workshops", label_visibility="hidden")
-
-        st.markdown(_label_html("Level", required=True), unsafe_allow_html=True)
-        level = st.selectbox("", ["", "Beginner", "Intermediate", "Advanced"], key="level", label_visibility="hidden")
-
-        st.markdown(_label_html("Preferred Days/Time", required=True), unsafe_allow_html=True)
-        pref_time = st.text_input("", key="pref_time", placeholder=required_placeholders["pref_time"], label_visibility="hidden")
-
-        st.markdown(_label_html("Previous Experience", required=False), unsafe_allow_html=True)
-        experience = st.text_area("", key="experience", label_visibility="hidden")
+        enrollment = st.selectbox(
+            "Enrollment Type",
+            ["", "Regular ($50/month)", "Drop-in ($15/session)"],
+            key="enroll"
+        )
+        mode = st.radio("Mode", ["In-Person", "Online"], key="mode")
+        workshops = st.multiselect(
+            "Workshops",
+            ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"],
+            key="workshops"
+        )
+        level = st.selectbox("Level", ["", "Beginner", "Intermediate", "Advanced"], key="level")
+        pref_time = st.text_input("Preferred Days/Time", key="pref_time", placeholder=required_placeholders["pref_time"])
+        experience = st.text_area("Previous Experience", key="experience")
 
         # Card 3 - Parent & Emergency Contact
         st.markdown(
@@ -773,32 +733,20 @@ def render_register():
                 <span>Parent & Emergency Contact</span>
                 <span></span>
               </div>
-              <div class="reg-card-sub">Who should we reach out to if needed?</div>
+              <div class="reg-card-sub">
+                Who should we reach out to if needed?
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-        st.markdown(_label_html("Parent/Guardian Name", required=False), unsafe_allow_html=True)
-        parent = st.text_input("", key="parent", label_visibility="hidden")
-
-        st.markdown(_label_html("Phone Number", required=False), unsafe_allow_html=True)
-        phone = st.text_input("", key="phone", label_visibility="hidden")
-
-        st.markdown(_label_html("Email Address", required=False), unsafe_allow_html=True)
-        email = st.text_input("", key="email", label_visibility="hidden")
-
-        st.markdown(_label_html("Address", required=False), unsafe_allow_html=True)
-        address = st.text_area("", key="address", label_visibility="hidden")
-
-        st.markdown(_label_html("Emergency Contact Name", required=False), unsafe_allow_html=True)
-        em_name = st.text_input("", key="em_name", label_visibility="hidden")
-
-        st.markdown(_label_html("Relationship", required=False), unsafe_allow_html=True)
-        em_rel = st.text_input("", key="em_rel", label_visibility="hidden")
-
-        st.markdown(_label_html("Emergency Phone", required=False), unsafe_allow_html=True)
-        em_phone = st.text_input("", key="em_phone", label_visibility="hidden")
+        parent = st.text_input("Parent/Guardian Name", key="parent")
+        phone = st.text_input("Phone Number", key="phone")
+        email = st.text_input("Email Address", key="email")
+        address = st.text_area("Address", key="address")
+        em_name = st.text_input("Emergency Contact Name", key="em_name")
+        em_rel = st.text_input("Relationship", key="em_rel")
+        em_phone = st.text_input("Emergency Phone", key="em_phone")
 
         # Card 4 - Medical & Consent
         st.markdown(
@@ -808,23 +756,17 @@ def render_register():
                 <span>Medical & Consent</span>
                 <span>☒</span>
               </div>
-              <div class="reg-card-sub">Safety information and media consent.</div>
+              <div class="reg-card-sub">
+                Safety information and media consent.
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-        st.markdown(_label_html("Allergies / Injuries / Conditions", required=False), unsafe_allow_html=True)
-        medical = st.text_area("", key="medical", label_visibility="hidden")
-
-        st.markdown(_label_html("Allow photo/video for promotions?", required=True), unsafe_allow_html=True)
-        consent = st.radio("", ["", "Yes", "No"], key="consent", label_visibility="hidden")
-
-        st.markdown(_label_html("Parent/Guardian Signature", required=True), unsafe_allow_html=True)
-        signature = st.text_input("", key="signature", placeholder=required_placeholders["signature"], label_visibility="hidden")
-
-        st.markdown(_label_html("Date", required=True), unsafe_allow_html=True)
-        sig_date = st.date_input("", value=date.today(), key="sig_date", label_visibility="hidden")
+        medical = st.text_area("Allergies / Injuries / Conditions", key="medical")
+        consent = st.radio("Allow photo/video for promotions?", ["", "Yes", "No"], key="consent")
+        signature = st.text_input("Parent/Guardian Signature", key="signature", placeholder=required_placeholders["signature"])
+        sig_date = st.date_input("Date", value=date.today(), key="sig_date")
 
         # Single submit button labeled "Submit Form"
         submitted = st.form_submit_button("Submit Form")
@@ -862,7 +804,7 @@ def render_register():
         if missing:
             st.error("Please fill the required fields: " + ", ".join(missing))
 
-            # safe client-side highlight + shake
+            # Client-side highlight + shake animation via JS (keeps navigation intact)
             js = f"""
             <script>
             (function() {{
@@ -872,22 +814,17 @@ def render_register():
                   const el = document.querySelector('[placeholder="'+p+'"]');
                   if (el) {{
                     el.style.borderColor = "#e11d48";
-                    el.style.boxShadow = "0 0 0 4px rgba(225,29,72,0.08)";
-                    el.animate([
-                      {{ boxShadow: "0 0 0 0 rgba(225,29,72,0)" }},
-                      {{ boxShadow: "0 0 0 6px rgba(225,29,72,0.08)" }},
-                      {{ boxShadow: "0 0 0 0 rgba(225,29,72,0)" }}
-                    ], {{ duration: 700 }});
+                    el.style.boxShadow = "0 0 0 3px rgba(225,29,72,0.12)";
                   }}
                 }});
                 const sections = document.querySelectorAll('.section');
                 if (sections.length > 0) {{
-                  const target = sections[0];
-                  target.classList.add('shake');
-                  setTimeout(() => target.classList.remove('shake'), 700);
+                  const last = sections[sections.length - 1];
+                  last.classList.add('shake');
+                  setTimeout(() => last.classList.remove('shake'), 400);
                 }}
               }} catch(e) {{
-                console.log('validation highlight error', e);
+                console.log('validation script error', e);
               }}
             }})();
             </script>
@@ -906,7 +843,7 @@ def render_register():
                 "address": address,
                 "enrollment": enrollment,
                 "mode": mode,
-                "workshops": "; ".join(workshops) if workshops else "",
+                "workshops": "; ".join(workshops),
                 "level": level,
                 "style": "",
                 "pref_time": pref_time,
@@ -938,22 +875,22 @@ elif page == "Admin":
 else:
     render_home()
 
-# BOTTOM NAV - visually HTML anchors (match look) while navigation is handled by query params/session
-# Use onclick to set window.location.search so the router picks up the page param.
-active_home = "active" if page == "Home" else ""
-active_classes = "active" if page == "Classes" else ""
-active_register = "active" if page == "Register" else ""
-active_about = "active" if page == "About" else ""
-active_admin = "active" if page == "Admin" else ""
+# BOTTOM NAV
+home = "active" if page == "Home" else ""
+classes = "active" if page == "Classes" else ""
+reg = "active" if page == "Register" else ""
+about = "active" if page == "About" else ""
+admin = "active" if page == "Admin" else ""
 
+# Use plain anchors with query params so navigation is top-level and consistent across hosts
 st.markdown(
     f"""
     <div class="bottom-nav">
-      <a class="{active_home}" href="#" onclick="window.location.search='?page=Home';return false;"><span>🏠</span>Home</a>
-      <a class="{active_classes}" href="#" onclick="window.location.search='?page=Classes';return false;"><span>📚</span>Classes</a>
-      <a class="{active_register}" href="#" onclick="window.location.search='?page=Register';return false;"><span>📝</span>Register</a>
-      <a class="{active_about}" href="#" onclick="window.location.search='?page=About';return false;"><span>ℹ️</span>About</a>
-      <a class="{active_admin}" href="#" onclick="window.location.search='?page=Admin';return false;"><span>🔒</span>Admin</a>
+      <a class="{home}" href="/?page=Home"><span>🏠</span>Home</a>
+      <a class="{classes}" href="/?page=Classes"><span>📚</span>Classes</a>
+      <a class="{reg}" href="/?page=Register"><span>📝</span>Register</a>
+      <a class="{about}" href="/?page=About"><span>ℹ️</span>About</a>
+      <a class="{admin}" href="/?page=Admin"><span>🔒</span>Admin</a>
     </div>
     """,
     unsafe_allow_html=True,
