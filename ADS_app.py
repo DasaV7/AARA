@@ -1,12 +1,9 @@
-# ADS_app.py - C03.5
+# ADS_app.py - C03.5 (updated: equal-height class cards)
 # Baseline: C03/C04 (your chosen baseline)
-# C03.5 changes:
-# - Classes page: three class cards displayed as vertical cards aligned in a row (responsive grid)
-# - Adds responsive .class-grid CSS (3 columns on desktop, stacked on mobile)
-# - Keeps slideshow, logo centering, dark form styling, early-bird pricing, and registration flow
-# - Registration form: Terms checkbox + "View Terms & Policies" expander placed between Date and Submit (inside form)
-# - 8-class price set to $100; Early bird $50/month for 3 months (June, July & August)
-# - Submit button forced to dark/gold theme even in Streamlit light mode
+# This variant:
+# - Ensures the three class cards in the .class-grid have equal heights on each row
+# - Uses CSS flexbox inside each card so content stretches and CTA/banner alignment remains consistent
+# - Preserves all previous features: centered logo, CSS-only slideshow, dark form styling, early-bird pricing, registration form with Terms checkbox and expander, responsive 3-column grid that collapses on mobile, and dark/gold button styling
 
 import streamlit as st
 import pandas as pd
@@ -59,7 +56,7 @@ CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
 # CSS: C02 global CSS (form fixes) + slideshow CSS (working engine) + logo centering override + button overrides
-# Added .class-grid for 3-column responsive layout
+# Added .class-grid for 3-column responsive layout and equal-height card rules
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -167,13 +164,27 @@ html, body, [data-testid="stAppViewContainer"] {{
   color: {GOLD};
 }}
 
+/* Card base */
 .class-card {{
-  padding: 14px;
+  padding: 18px;
   border-radius: 12px;
   background: rgba(15,23,42,0.03);
   border: 1px solid {BORDER};
   margin-bottom: 12px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;   /* make card a column flex container */
+  justify-content: space-between; /* push footer/CTA to bottom */
+  min-height: 260px;        /* baseline min height for visual balance */
+}}
+
+/* Ensure content inside card can grow and keep equal height across grid */
+.class-card .card-content {{
+  flex: 1 1 auto;
+}}
+.class-card .card-footer {{
+  margin-top: 12px;
+  flex-shrink: 0;
 }}
 
 .required-label::after {{
@@ -345,12 +356,15 @@ div[data-baseweb="tag"] {{
   gap: 16px;
   max-width: 980px;
   margin: 0 auto 12px auto;
-  align-items: start;
+  align-items: stretch; /* ensure grid items stretch to same height */
 }}
 .class-grid .class-card {{
   margin: 0;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }}
 @media (max-width: 880px) {{
   .class-grid {{
@@ -677,24 +691,39 @@ def render_classes():
         f"""
         <div class="class-grid">
           <div class="class-card">
-            <b>Tiny Stars (Ages 5-8)</b><br>
-            Beginner / Intermediate<br>
-            Wed &amp; Fri · 6:30-7:30 PM<br>
-            4 classes: ${four} · 8 classes: ${eight}
+            <div class="card-content">
+              <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Tiny Stars (Ages 5-8)</div>
+              <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
+              <div style="color:{GOLD_SOFT}; margin-top:8px;">Wed &amp; Fri · 6:30-7:30 PM</div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+            </div>
+            <div class="card-footer" style="text-align:center;">
+              <a class="btn-primary" href="/?page=Register">Register</a>
+            </div>
           </div>
 
           <div class="class-card">
-            <b>Shining Stars (Ages 9+)</b><br>
-            Beginner / Intermediate<br>
-            Tue · 7-8 PM<br>
-            4 classes: ${four} · 8 classes: ${eight}
+            <div class="card-content">
+              <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Shining Stars (Ages 9+)</div>
+              <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
+              <div style="color:{GOLD_SOFT}; margin-top:8px;">Tue · 7-8 PM</div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+            </div>
+            <div class="card-footer" style="text-align:center;">
+              <a class="btn-primary" href="/?page=Register">Register</a>
+            </div>
           </div>
 
           <div class="class-card">
-            <b>Dream Chasers (Ladies 18+)</b><br>
-            Beginner / Intermediate<br>
-            Thu 6:30-7:30 PM · Sat 10:30-11:30 AM<br>
-            4 classes: ${four} · 8 classes: ${eight}
+            <div class="card-content">
+              <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Dream Chasers (Ladies 18+)</div>
+              <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
+              <div style="color:{GOLD_SOFT}; margin-top:8px;">Thu 6:30-7:30 PM · Sat 10:30-11:30 AM</div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+            </div>
+            <div class="card-footer" style="text-align:center;">
+              <a class="btn-primary" href="/?page=Register">Register</a>
+            </div>
           </div>
         </div>
         """,
