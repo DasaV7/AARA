@@ -1,10 +1,14 @@
-# ADS_app.py - C03-fix-selects
-# Baseline: C01/C02 preserved
-# This variant:
-# - Uses the C02 CSS for the global theme and form controls (select/multiselect fixes restored)
-# - Replaces only the slideshow CSS section with the CSS block you provided (the working CSS-only slideshow)
-# - Keeps the working CSS-only slideshow render function and layout from C03
-# - Preserves all other features (early-bird logic, pricing, centered logo, primary buttons, registration flow)
+# ADS_app.py - C04
+# Baseline: C03 (your chosen baseline)
+# C04 changes:
+# - Logo centering fixed for all screen sizes (desktop, mobile vertical/horizontal)
+# - Early Bird banner updated: "$50/month for 3 months (June, July & August)"
+# - 8-class price updated to $100 everywhere (pricing engine, classes page, registration dropdown)
+# - Registration form: added "I agree to the Terms & Policies" checkbox (required)
+#   and a "View Terms & Policies" toggle that opens an expander with the policy text
+# - Classes page: added banner "Online & Zoom sessions are available. Drop-in classes for any batch: $15/session"
+# - Submit button and Streamlit button styles forced to dark/gold theme (no light-mode white button)
+# - Preserves C03 slideshow (CSS-only, negative-delay), C02 form styling, early-bird logic, and all other features
 
 import streamlit as st
 import pandas as pd
@@ -34,11 +38,15 @@ REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
 VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
-# SESSION STATE
+# SESSION STATE defaults
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
+if "show_terms" not in st.session_state:
+    st.session_state.show_terms = False
+if "agree_terms" not in st.session_state:
+    st.session_state.agree_terms = False
 
 params = st.query_params
 if "page" in params:
@@ -56,7 +64,7 @@ TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
-# CSS: Use C02 global CSS (keeps select/multiselect dark fixes) and replace slideshow section
+# CSS: C02 global CSS (form fixes) + slideshow CSS (working engine) + logo centering override + button overrides
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -326,35 +334,55 @@ div[data-baseweb="tag"] {{
   accent-color: #d4af37 !important;
 }}
 
-/* Logo glow wrapper - enlarged and perfectly centered (C02) */
+/* Logo glow wrapper - ensure perfect centering on all devices */
 .logo-wrapper {{
   display: flex;
-  justify-content: center;
+  justify-content: center !important;
   align-items: center;
-  flex-direction: column;
   width: 100%;
-  margin-bottom: 8px;
+  margin: 0 auto 8px auto !important;
+  text-align: center;
 }}
-
 .logo-circle {{
   border-radius: 50%;
   padding: 10px;
   box-shadow: 0 0 40px rgba(212,175,55,0.7);
   background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(0,0,0,0.9) 60%);
 }}
+.logo-circle img {{
+  display: block;
+  margin: 0 auto;
+  max-width: 340px;
+  height: auto;
+}}
 
-/* === SLIDESHOW SECTION (replaced with your working CSS from before C03) ===
-   This is the slideshow CSS you provided earlier (keeps the CSS-only negative-delay approach).
+/* Force Streamlit buttons (including submit) to use dark/gold theme even in light mode */
+.stButton>button, .stDownloadButton>button {{
+  background: {GOLD} !important;
+  color: {BG_TOP} !important;
+  border-radius: 999px !important;
+  border: 1px solid {GOLD} !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+}}
+.stButton>button:hover, .stDownloadButton>button:hover {{
+  background: {GOLD_SOFT} !important;
+  color: {BG_TOP} !important;
+}}
+
+/* === SLIDESHOW SECTION (working CSS-only slideshow) ===
+   Full-width inside content column, cinematic height 400px, rounded corners 12px.
 */
 .slideshow {{
   position: relative;
   width: 100%;
   max-width: 920px;
-  height: 380px;
+  height: 400px;
   margin: 0 auto 12px auto;
   border-radius: 12px;
   overflow: hidden;
   border:1px solid {BORDER};
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }}
 .slide {{
   position: absolute;
@@ -365,7 +393,7 @@ div[data-baseweb="tag"] {{
   animation-name: slidefade;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-}}
+}
 @keyframes slidefade {{
   0%   {{ opacity: 0; }}
   8%   {{ opacity: 1; }}
@@ -383,14 +411,6 @@ div[data-baseweb="tag"] {{
   border-radius: 8px;
   border: 1px solid rgba(212,175,55,0.08);
   z-index: 6;
-}}
-/* Make logo image glow when used inline */
-.logo-glow {{
-  display:inline-block;
-  padding:12px;
-  border-radius:999px;
-  box-shadow:0 18px 60px rgba(212,175,55,0.18);
-  background: radial-gradient(circle at 30% 30%, rgba(212,175,55,0.06), transparent 40%);
 }}
 </style>
 """
@@ -435,16 +455,17 @@ def is_early_bird_active():
 
 
 def get_pricing():
+    # Early bird: cheaper 4-class price, 8-class updated to $100
     if is_early_bird_active():
         return {
             "four": 50,
-            "eight": 90,
-            "enrollment": 50,
+            "eight": 100,
+            "enrollment": 50,  # $50/month early bird
         }
     else:
         return {
             "four": 60,
-            "eight": 90,
+            "eight": 100,
             "enrollment": 60,
         }
 
@@ -462,22 +483,24 @@ def _img_to_base64(path):
 
 # HEADER - centered glowing logo (used on all pages)
 def render_header():
-    # Use a full-width HTML block to ensure perfect centering on desktop + mobile
+    # Use a full-width HTML block with embedded base64 image to ensure perfect centering on desktop + mobile
     if os.path.exists(LOGO_PATH):
+        b64 = _img_to_base64(LOGO_PATH)
+        if b64:
+            img_tag = f'<img src="data:image/png;base64,{b64}" alt="AARA Dance Studio logo" style="max-width:340px; height:auto;">'
+        else:
+            img_tag = f'<img src="{LOGO_PATH}" alt="AARA Dance Studio logo" style="max-width:340px; height:auto;">'
         st.markdown(
-            "<div class='logo-wrapper'><div class='logo-circle'>",
-            unsafe_allow_html=True,
-        )
-        st.image(LOGO_PATH, width=340)
-        st.markdown(
-            "</div></div>",
+            f"<div class='logo-wrapper'><div class='logo-circle'>{img_tag}</div></div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             f"""
-            <div style='text-align:center; color:{GOLD}; font-size:1.8rem; font-weight:700;'>
-                AARA Dance Studio
+            <div class='logo-wrapper'>
+              <div class='logo-circle' style='padding:14px;'>
+                <div style='font-size:1.6rem; font-weight:800; color:{GOLD};'>AARA Dance Studio</div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -502,15 +525,27 @@ def render_header():
 
 
 def render_early_banner():
+    pricing = get_pricing()
+    enroll_price = pricing["enrollment"]
+    # Early bird message includes time-specific offer for 3 months
     if is_early_bird_active():
-        pricing = get_pricing()
         st.markdown(
             f"""
-            <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:{RED}; color:{GOLD_SOFT}; padding:8px 16px; border-radius:999px;">
+            <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:{RED}; color:{GOLD_SOFT}; padding:10px 16px; border-radius:999px;">
               ★ Early Bird Offer ★&nbsp;&nbsp;
-              First 10 Registrations — Only <b>${pricing["enrollment"]}</b>/month!
+              **${enroll_price}/month for 3 months (June, July &amp; August)** — Limited to first 10 registrations!
               <br>
-              Regular price: <b>$60</b> / <b>$90</b> · Limited spots · Register now to lock in your rate
+              4 classes early-bird: <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        # If early bird not active, show a subtle banner with current pricing
+        st.markdown(
+            f"""
+            <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:transparent; color:{GOLD_SOFT}; padding:8px 16px; border-radius:999px;">
+              Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
             </div>
             """,
             unsafe_allow_html=True,
@@ -575,7 +610,8 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
     for idx, path in enumerate(slide_paths):
         b64 = _img_to_base64(path)
         if b64:
-            bg = f"url('data:image/jpeg;base64,{b64}')"
+            mime = "jpeg" if path.lower().endswith((".jpg", ".jpeg")) else "png"
+            bg = f"url('data:image/{mime};base64,{b64}')"
         else:
             # fallback to path (if accessible)
             bg = f"url('{path}')"
@@ -603,7 +639,7 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 
 # HOME PAGE - hero + slideshow
 def render_home():
-    # Header already rendered globally; keep hero content
+    # Hero text
     st.markdown(
         f"""
         <div class="section" style="display:flex; flex-direction:column; gap:18px;">
@@ -633,7 +669,7 @@ def render_home():
 
     render_qr_section()
 
-# CLASSES PAGE (dynamic pricing)
+# CLASSES PAGE (dynamic pricing) with new banner
 def render_classes():
     pricing = get_pricing()
     four = pricing["four"]
@@ -643,6 +679,17 @@ def render_classes():
     st.markdown('<div class="title">Programs & Fees</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="subtitle">Choose the program that fits your dancer best.</div>',
+        unsafe_allow_html=True,
+    )
+
+    # New banner: Online & Zoom sessions + Drop-in info
+    st.markdown(
+        f"""
+        <div style="max-width:920px; margin:10px auto 12px auto; padding:12px; border-radius:12px; background: rgba(17,17,17,0.6); border:1px solid {BORDER};">
+          <div style="font-weight:700; color:{GOLD}; margin-bottom:6px;">Online & Zoom sessions are available</div>
+          <div style="color:{GOLD_SOFT};">Drop-in classes for any batch: <b>$15/session</b></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -773,10 +820,11 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + single submit button + safe client-side shake
+# REGISTRATION PAGE - vertical cards + terms checkbox + signature
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
+    eight_price = pricing["eight"]
 
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="title">Student Registration</div>', unsafe_allow_html=True)
@@ -791,6 +839,22 @@ def render_register():
         "pref_time": "_req_pref_time",
         "signature": "_req_signature",
     }
+
+    # Show terms expander if toggled
+    if st.session_state.show_terms:
+        with st.expander("Terms & Policies (close to hide)", expanded=True):
+            st.markdown(
+                """
+                📜 **Terms & Policies**
+                - Monthly fees must be paid on time.
+                - Drop-in classes must be paid before each session.
+                - Missed classes are non-refundable.
+                - Students are expected to maintain discipline and regular attendance.
+                - Opportunities for stage performances, community events & competitions will be provided.
+                - Priority will be given to regular (monthly) students for performances and events.
+                """,
+                unsafe_allow_html=True,
+            )
 
     with st.form("reg_form", clear_on_submit=False):
         # Card 1 - Student Info
@@ -872,9 +936,16 @@ def render_register():
             '<label class="required-label">Enrollment Type</label>',
             unsafe_allow_html=True,
         )
+        # Enrollment options now include 8 classes ($100)
         enrollment = st.selectbox(
             "",
-            ["", f"Regular (${enroll_price}/month)", "Drop-in ($15/session)"],
+            [
+                "",
+                f"Regular (${enroll_price}/month)",
+                f"4 Classes (${pricing['four']})",
+                f"8 Classes (${eight_price})",
+                "Drop-in ($15/session)",
+            ],
             key="enroll",
             label_visibility="collapsed",
         )
@@ -1056,6 +1127,22 @@ def render_register():
             label_visibility="collapsed",
         )
 
+        # Terms & Policies checkbox + view toggle
+        st.markdown(
+            '<div style="margin-top:8px; margin-bottom:6px;">',
+            unsafe_allow_html=True,
+        )
+        # "View Terms & Policies" button toggles the expander visibility
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("View Terms & Policies"):
+                st.session_state.show_terms = not st.session_state.show_terms
+                # Rerun to show/hide the expander immediately
+                st.experimental_rerun()
+        with col2:
+            agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
+        st.markdown('</div>', unsafe_allow_html=True)
+
         st.markdown(
             '<label class="required-label">Parent/Guardian Signature</label>',
             unsafe_allow_html=True,
@@ -1080,6 +1167,7 @@ def render_register():
 
         submitted = st.form_submit_button("Submit Form")
 
+    # Form submission handling
     if submitted:
         missing = []
         missing_placeholders = []
@@ -1103,6 +1191,9 @@ def render_register():
             missing_placeholders.append(required_placeholders["pref_time"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
+        # Terms checkbox required
+        if not st.session_state.get("agree_terms", False):
+            missing.append("Agreement to Terms & Policies")
         if not signature or not signature.strip():
             missing.append("Parent/Guardian Signature")
             missing_placeholders.append(required_placeholders["signature"])
@@ -1163,6 +1254,7 @@ def render_register():
                 "em_phone": em_phone,
                 "medical": medical,
                 "consent": consent,
+                "agreed_terms": st.session_state.get("agree_terms", False),
                 "signature": signature,
                 "sig_date": sig_date.isoformat(),
             }
