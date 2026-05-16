@@ -1,14 +1,13 @@
-# ADS_app.py - C04
-# Baseline: C03 (your chosen baseline)
-# C04 changes:
-# - Logo centering fixed for all screen sizes (desktop, mobile vertical/horizontal)
-# - Early Bird banner updated: "$50/month for 3 months (June, July & August)"
-# - 8-class price updated to $100 everywhere (pricing engine, classes page, registration dropdown)
-# - Registration form: added "I agree to the Terms & Policies" checkbox (required)
-#   and a "View Terms & Policies" toggle that opens an expander with the policy text
-# - Classes page: added banner "Online & Zoom sessions are available. Drop-in classes for any batch: $15/session"
-# - Submit button and Streamlit button styles forced to dark/gold theme (no light-mode white button)
-# - Preserves C03 slideshow (CSS-only, negative-delay), C02 form styling, early-bird logic, and all other features
+# ADS_app.py - C04.1 (fixes)
+# Baseline: C03/C04
+# Fixes in this variant:
+# - Classes page: class types displayed as vertical cards (stacked), new banner moved to just above Register button
+# - Registration page: removed st.button() from inside form (caused StreamlitAPIException)
+#   - "View Terms & Policies" is now an expander placed above the form (opens text box)
+#   - Inside the form there is a required checkbox "I agree to the Terms & Policies" (st.checkbox inside form)
+#   - Submit button restored using st.form_submit_button()
+# - Minor layout tweaks to ensure the submit button and terms checkbox are visible and required
+# - Preserves slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
 
 import streamlit as st
 import pandas as pd
@@ -43,10 +42,7 @@ if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
-if "show_terms" not in st.session_state:
-    st.session_state.show_terms = False
-if "agree_terms" not in st.session_state:
-    st.session_state.agree_terms = False
+# agree_terms will be stored by the checkbox inside the form (no pre-init required)
 
 params = st.query_params
 if "page" in params:
@@ -129,23 +125,6 @@ html, body, [data-testid="stAppViewContainer"] {{
   background: {GOLD_SOFT};
 }}
 
-.btn-secondary {{
-  display: inline-block;
-  padding: 12px 22px;
-  background: transparent;
-  color: {GOLD_SOFT} !important;
-  border-radius: 999px;
-  border: 1px solid {GOLD};
-  text-decoration: none;
-  font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease;
-}}
-
-.btn-secondary:hover {{
-  background: {GOLD};
-  color: {BG_TOP} !important;
-}}
-
 .whatsapp-btn {{
   position: fixed;
   top: 70px;
@@ -190,28 +169,20 @@ html, body, [data-testid="stAppViewContainer"] {{
 }}
 
 .class-card {{
-  padding: 10px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 12px;
   background: rgba(15,23,42,0.03);
   border: 1px solid {BORDER};
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
 }}
 
 .required-label::after {{
   content: " *";
   color: #ff4d4d;
   font-weight: 900;
-}}
-
-@keyframes shake {{
-  10%, 90% {{ transform: translateX(-1px); }}
-  20%, 80% {{ transform: translateX(2px); }}
-  30%, 50%, 70% {{ transform: translateX(-4px); }}
-  40%, 60% {{ transform: translateX(4px); }}
-}}
-
-.shake {{
-  animation: shake 0.35s ease-in-out;
 }}
 
 .footer {{
@@ -533,7 +504,7 @@ def render_early_banner():
             f"""
             <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:{RED}; color:{GOLD_SOFT}; padding:10px 16px; border-radius:999px;">
               ★ Early Bird Offer ★&nbsp;&nbsp;
-              **${enroll_price}/month for 3 months (June, July &amp; August)** — Limited to first 10 registrations!
+              <b>${enroll_price}/month for 3 months (June, July &amp; August)</b> — Limited to first 10 registrations!
               <br>
               4 classes early-bird: <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
             </div>
@@ -669,7 +640,7 @@ def render_home():
 
     render_qr_section()
 
-# CLASSES PAGE (dynamic pricing) with new banner
+# CLASSES PAGE (dynamic pricing) with vertical cards and banner moved before Register button
 def render_classes():
     pricing = get_pricing()
     four = pricing["four"]
@@ -682,17 +653,7 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    # New banner: Online & Zoom sessions + Drop-in info
-    st.markdown(
-        f"""
-        <div style="max-width:920px; margin:10px auto 12px auto; padding:12px; border-radius:12px; background: rgba(17,17,17,0.6); border:1px solid {BORDER};">
-          <div style="font-weight:700; color:{GOLD}; margin-bottom:6px;">Online & Zoom sessions are available</div>
-          <div style="color:{GOLD_SOFT};">Drop-in classes for any batch: <b>$15/session</b></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
+    # Vertical cards (stacked) for each class type
     st.markdown(
         f"""
         <div class="class-card">
@@ -729,10 +690,23 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
+    # New banner placed just above the Register button (as requested)
     st.markdown(
-        '<a class="btn-primary" href="/?page=Register">Register Now</a>',
+        f"""
+        <div style="max-width:920px; margin:12px auto 8px auto; padding:12px; border-radius:12px; background: rgba(17,17,17,0.6); border:1px solid {BORDER}; text-align:center;">
+          <div style="font-weight:700; color:{GOLD}; margin-bottom:6px;">Online &amp; Zoom sessions are available</div>
+          <div style="color:{GOLD_SOFT};">Drop-in classes for any batch: <b>$15/session</b></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
+
+    # Register CTA
+    st.markdown(
+        '<div style="text-align:center; margin-top:10px;"><a class="btn-primary" href="/?page=Register">Register Now</a></div>',
+        unsafe_allow_html=True,
+    )
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
@@ -820,7 +794,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + terms checkbox + signature
+# REGISTRATION PAGE - vertical cards + terms expander + required checkbox + submit button
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
@@ -840,22 +814,22 @@ def render_register():
         "signature": "_req_signature",
     }
 
-    # Show terms expander if toggled
-    if st.session_state.show_terms:
-        with st.expander("Terms & Policies (close to hide)", expanded=True):
-            st.markdown(
-                """
-                📜 **Terms & Policies**
-                - Monthly fees must be paid on time.
-                - Drop-in classes must be paid before each session.
-                - Missed classes are non-refundable.
-                - Students are expected to maintain discipline and regular attendance.
-                - Opportunities for stage performances, community events & competitions will be provided.
-                - Priority will be given to regular (monthly) students for performances and events.
-                """,
-                unsafe_allow_html=True,
-            )
+    # Terms & Policies expander (outside the form) - opens a text box with the policy
+    with st.expander("View Terms & Policies", expanded=False):
+        st.markdown(
+            """
+            📜 **Terms & Policies**
+            - Monthly fees must be paid on time.
+            - Drop-in classes must be paid before each session.
+            - Missed classes are non-refundable.
+            - Students are expected to maintain discipline and regular attendance.
+            - Opportunities for stage performances, community events & competitions will be provided.
+            - Priority will be given to regular (monthly) students for performances and events.
+            """,
+            unsafe_allow_html=True,
+        )
 
+    # The form (submit button must be inside the form)
     with st.form("reg_form", clear_on_submit=False):
         # Card 1 - Student Info
         st.markdown(
@@ -873,48 +847,17 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<label class="required-label">Student Name</label>',
-            unsafe_allow_html=True,
-        )
-        student_name = st.text_input(
-            "",
-            key="student_name",
-            placeholder=required_placeholders["student_name"],
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Student Name</label>', unsafe_allow_html=True)
+        student_name = st.text_input("", key="student_name", placeholder=required_placeholders["student_name"], label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Date of Birth (Age)</label>',
-            unsafe_allow_html=True,
-        )
-        dob = st.text_input(
-            "",
-            key="dob",
-            placeholder=required_placeholders["dob"],
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Date of Birth (Age)</label>', unsafe_allow_html=True)
+        dob = st.text_input("", key="dob", placeholder=required_placeholders["dob"], label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Gender</label>',
-            unsafe_allow_html=True,
-        )
-        gender = st.selectbox(
-            "",
-            ["", "Female", "Male", "Other", "Prefer not to say"],
-            key="gender",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Gender</label>', unsafe_allow_html=True)
+        gender = st.selectbox("", ["", "Female", "Male", "Other", "Prefer not to say"], key="gender", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>School Name (optional)</label>',
-            unsafe_allow_html=True,
-        )
-        school = st.text_input(
-            "",
-            key="school",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>School Name (optional)</label>', unsafe_allow_html=True)
+        school = st.text_input("", key="school", label_visibility="collapsed")
 
         # Card 2 - Class Details
         st.markdown(
@@ -932,11 +875,7 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<label class="required-label">Enrollment Type</label>',
-            unsafe_allow_html=True,
-        )
-        # Enrollment options now include 8 classes ($100)
+        st.markdown('<label class="required-label">Enrollment Type</label>', unsafe_allow_html=True)
         enrollment = st.selectbox(
             "",
             [
@@ -950,59 +889,20 @@ def render_register():
             label_visibility="collapsed",
         )
 
-        st.markdown(
-            '<label class="required-label">Mode</label>',
-            unsafe_allow_html=True,
-        )
-        mode = st.radio(
-            "",
-            ["In-Person", "Online"],
-            key="mode",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Mode</label>', unsafe_allow_html=True)
+        mode = st.radio("", ["In-Person", "Online"], key="mode", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Workshops</label>',
-            unsafe_allow_html=True,
-        )
-        workshops = st.multiselect(
-            "",
-            ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"],
-            key="workshops",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Workshops</label>', unsafe_allow_html=True)
+        workshops = st.multiselect("", ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"], key="workshops", label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Level</label>',
-            unsafe_allow_html=True,
-        )
-        level = st.selectbox(
-            "",
-            ["", "Beginner", "Intermediate", "Advanced"],
-            key="level",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Level</label>', unsafe_allow_html=True)
+        level = st.selectbox("", ["", "Beginner", "Intermediate", "Advanced"], key="level", label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Preferred Days/Time</label>',
-            unsafe_allow_html=True,
-        )
-        pref_time = st.text_input(
-            "",
-            key="pref_time",
-            placeholder=required_placeholders["pref_time"],
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Preferred Days/Time</label>', unsafe_allow_html=True)
+        pref_time = st.text_input("", key="pref_time", placeholder=required_placeholders["pref_time"], label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Previous Experience</label>',
-            unsafe_allow_html=True,
-        )
-        experience = st.text_area(
-            "",
-            key="experience",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Previous Experience</label>', unsafe_allow_html=True)
+        experience = st.text_area("", key="experience", label_visibility="collapsed")
 
         # Card 3 - Parent & Emergency Contact
         st.markdown(
@@ -1020,75 +920,26 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<label>Parent/Guardian Name</label>',
-            unsafe_allow_html=True,
-        )
-        parent = st.text_input(
-            "",
-            key="parent",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Parent/Guardian Name</label>', unsafe_allow_html=True)
+        parent = st.text_input("", key="parent", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Phone Number</label>',
-            unsafe_allow_html=True,
-        )
-        phone = st.text_input(
-            "",
-            key="phone",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Phone Number</label>', unsafe_allow_html=True)
+        phone = st.text_input("", key="phone", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Email Address</label>',
-            unsafe_allow_html=True,
-        )
-        email = st.text_input(
-            "",
-            key="email",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Email Address</label>', unsafe_allow_html=True)
+        email = st.text_input("", key="email", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Address</label>',
-            unsafe_allow_html=True,
-        )
-        address = st.text_area(
-            "",
-            key="address",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Address</label>', unsafe_allow_html=True)
+        address = st.text_area("", key="address", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Emergency Contact Name</label>',
-            unsafe_allow_html=True,
-        )
-        em_name = st.text_input(
-            "",
-            key="em_name",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Emergency Contact Name</label>', unsafe_allow_html=True)
+        em_name = st.text_input("", key="em_name", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Relationship</label>',
-            unsafe_allow_html=True,
-        )
-        em_rel = st.text_input(
-            "",
-            key="em_rel",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Relationship</label>', unsafe_allow_html=True)
+        em_rel = st.text_input("", key="em_rel", label_visibility="collapsed")
 
-        st.markdown(
-            '<label>Emergency Phone</label>',
-            unsafe_allow_html=True,
-        )
-        em_phone = st.text_input(
-            "",
-            key="em_phone",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Emergency Phone</label>', unsafe_allow_html=True)
+        em_phone = st.text_input("", key="em_phone", label_visibility="collapsed")
 
         # Card 4 - Medical & Consent
         st.markdown(
@@ -1106,65 +957,24 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<label>Allergies / Injuries / Conditions</label>',
-            unsafe_allow_html=True,
-        )
-        medical = st.text_area(
-            "",
-            key="medical",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label>Allergies / Injuries / Conditions</label>', unsafe_allow_html=True)
+        medical = st.text_area("", key="medical", label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Allow photo/video for promotions?</label>',
-            unsafe_allow_html=True,
-        )
-        consent = st.radio(
-            "",
-            ["", "Yes", "No"],
-            key="consent",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Allow photo/video for promotions?</label>', unsafe_allow_html=True)
+        consent = st.radio("", ["", "Yes", "No"], key="consent", label_visibility="collapsed")
 
-        # Terms & Policies checkbox + view toggle
-        st.markdown(
-            '<div style="margin-top:8px; margin-bottom:6px;">',
-            unsafe_allow_html=True,
-        )
-        # "View Terms & Policies" button toggles the expander visibility
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("View Terms & Policies"):
-                st.session_state.show_terms = not st.session_state.show_terms
-                # Rerun to show/hide the expander immediately
-                st.experimental_rerun()
-        with col2:
-            agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
+        # Terms checkbox inside the form (required)
+        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
+        agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown(
-            '<label class="required-label">Parent/Guardian Signature</label>',
-            unsafe_allow_html=True,
-        )
-        signature = st.text_input(
-            "",
-            key="signature",
-            placeholder=required_placeholders["signature"],
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Parent/Guardian Signature</label>', unsafe_allow_html=True)
+        signature = st.text_input("", key="signature", placeholder=required_placeholders["signature"], label_visibility="collapsed")
 
-        st.markdown(
-            '<label class="required-label">Date</label>',
-            unsafe_allow_html=True,
-        )
-        sig_date = st.date_input(
-            "",
-            value=date.today(),
-            key="sig_date",
-            label_visibility="collapsed",
-        )
+        st.markdown('<label class="required-label">Date</label>', unsafe_allow_html=True)
+        sig_date = st.date_input("", value=date.today(), key="sig_date", label_visibility="collapsed")
 
+        # Submit button (must be inside the form)
         submitted = st.form_submit_button("Submit Form")
 
     # Form submission handling
