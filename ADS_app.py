@@ -1,14 +1,12 @@
-# ADS_app.py - C04.3
-# Baseline: C04 (your chosen baseline)
-# C04.3 changes:
-# - Classes page: ensure three class types are vertical cards (stacked)
-# - Registration form:
-#   - Removed the earlier "Parent/Guardian consent for student participation" checkbox
-#   - Moved "View Terms & Policies" expander to sit next to the final "I agree to the Terms & Policies" checkbox
-#     (both are inside the form, placed between Date and Submit)
-#   - Kept the "I agree to the Terms & Policies" checkbox required before submission
-#   - Submit button remains inside the form
-# - Preserves slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
+# ADS_app.py - C03.5
+# Baseline: C03/C04 (your chosen baseline)
+# C03.5 changes:
+# - Classes page: three class cards displayed as vertical cards aligned in a row (responsive grid)
+# - Adds responsive .class-grid CSS (3 columns on desktop, stacked on mobile)
+# - Keeps slideshow, logo centering, dark form styling, early-bird pricing, and registration flow
+# - Registration form: Terms checkbox + "View Terms & Policies" expander placed between Date and Submit (inside form)
+# - 8-class price set to $100; Early bird $50/month for 3 months (June, July & August)
+# - Submit button forced to dark/gold theme even in Streamlit light mode
 
 import streamlit as st
 import pandas as pd
@@ -61,6 +59,7 @@ CARD_BG = "#111111"
 BORDER = "#3a3a3a"
 
 # CSS: C02 global CSS (form fixes) + slideshow CSS (working engine) + logo centering override + button overrides
+# Added .class-grid for 3-column responsive layout
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
@@ -174,9 +173,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   background: rgba(15,23,42,0.03);
   border: 1px solid {BORDER};
   margin-bottom: 12px;
-  max-width: 920px;
-  margin-left: auto;
-  margin-right: auto;
+  box-sizing: border-box;
 }}
 
 .required-label::after {{
@@ -339,6 +336,28 @@ div[data-baseweb="tag"] {{
 .stButton>button:hover, .stDownloadButton>button:hover {{
   background: {GOLD_SOFT} !important;
   color: {BG_TOP} !important;
+}}
+
+/* === Classes grid: three vertical cards in a row on desktop, stacked on mobile === */
+.class-grid {{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 980px;
+  margin: 0 auto 12px auto;
+  align-items: start;
+}}
+.class-grid .class-card {{
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}}
+@media (max-width: 880px) {{
+  .class-grid {{
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0 12px;
+  }}
 }}
 
 /* === SLIDESHOW SECTION (working CSS-only slideshow) ===
@@ -640,7 +659,7 @@ def render_home():
 
     render_qr_section()
 
-# CLASSES PAGE (dynamic pricing) with vertical cards and banner moved before Register button
+# CLASSES PAGE (dynamic pricing) with responsive grid (3 columns on desktop)
 def render_classes():
     pricing = get_pricing()
     four = pricing["four"]
@@ -653,38 +672,30 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    # Vertical cards (stacked) for each class type
+    # Responsive grid: three vertical cards in a row on desktop, stacked on mobile
     st.markdown(
         f"""
-        <div class="class-card">
-          <b>Tiny Stars (Ages 5-8)</b><br>
-          Beginner / Intermediate<br>
-          Wed &amp; Fri · 6:30-7:30 PM<br>
-          4 classes: ${four} · 8 classes: ${eight}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div class="class-grid">
+          <div class="class-card">
+            <b>Tiny Stars (Ages 5-8)</b><br>
+            Beginner / Intermediate<br>
+            Wed &amp; Fri · 6:30-7:30 PM<br>
+            4 classes: ${four} · 8 classes: ${eight}
+          </div>
 
-    st.markdown(
-        f"""
-        <div class="class-card">
-          <b>Shining Stars (Ages 9+)</b><br>
-          Beginner / Intermediate<br>
-          Tue · 7-8 PM<br>
-          4 classes: ${four} · 8 classes: ${eight}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+          <div class="class-card">
+            <b>Shining Stars (Ages 9+)</b><br>
+            Beginner / Intermediate<br>
+            Tue · 7-8 PM<br>
+            4 classes: ${four} · 8 classes: ${eight}
+          </div>
 
-    st.markdown(
-        f"""
-        <div class="class-card">
-          <b>Dream Chasers (Ladies 18+)</b><br>
-          Beginner / Intermediate<br>
-          Thu 6:30-7:30 PM · Sat 10:30-11:30 AM<br>
-          4 classes: ${four} · 8 classes: ${eight}
+          <div class="class-card">
+            <b>Dream Chasers (Ladies 18+)</b><br>
+            Beginner / Intermediate<br>
+            Thu 6:30-7:30 PM · Sat 10:30-11:30 AM<br>
+            4 classes: ${four} · 8 classes: ${eight}
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -794,7 +805,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + terms expander moved next to final checkbox + submit button
+# REGISTRATION PAGE - form with Terms checkbox + expander placed between Date and Submit
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
