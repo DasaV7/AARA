@@ -1,12 +1,14 @@
-# ADS_app.py - C04.2
+# ADS_app.py - C04.3
 # Baseline: C04 (your chosen baseline)
-# C04.2 changes:
-# - Registration form: move "I agree to the Terms & Policies" checkbox to after Date and before Submit
-# - Add required "Parent/Guardian consent for student participation" checkbox (placed near Parent/Guardian fields)
-# - Ensure Submit button is inside the form and visible
-# - Keep Terms & Policies expander outside the form (for viewing)
-# - Classes page: ensure the three class types are displayed as vertical cards (stacked)
-# - Preserve slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
+# C04.3 changes:
+# - Classes page: ensure three class types are vertical cards (stacked)
+# - Registration form:
+#   - Removed the earlier "Parent/Guardian consent for student participation" checkbox
+#   - Moved "View Terms & Policies" expander to sit next to the final "I agree to the Terms & Policies" checkbox
+#     (both are inside the form, placed between Date and Submit)
+#   - Kept the "I agree to the Terms & Policies" checkbox required before submission
+#   - Submit button remains inside the form
+# - Preserves slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
 
 import streamlit as st
 import pandas as pd
@@ -792,7 +794,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + terms expander + required checkboxes + submit button
+# REGISTRATION PAGE - vertical cards + terms expander moved next to final checkbox + submit button
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
@@ -811,21 +813,6 @@ def render_register():
         "pref_time": "_req_pref_time",
         "signature": "_req_signature",
     }
-
-    # Terms & Policies expander (outside the form) - opens a text box with the policy
-    with st.expander("View Terms & Policies", expanded=False):
-        st.markdown(
-            """
-            📜 **Terms & Policies**
-            - Monthly fees must be paid on time.
-            - Drop-in classes must be paid before each session.
-            - Missed classes are non-refundable.
-            - Students are expected to maintain discipline and regular attendance.
-            - Opportunities for stage performances, community events & competitions will be provided.
-            - Priority will be given to regular (monthly) students for performances and events.
-            """,
-            unsafe_allow_html=True,
-        )
 
     # The form (submit button must be inside the form)
     with st.form("reg_form", clear_on_submit=False):
@@ -939,11 +926,6 @@ def render_register():
         st.markdown('<label>Emergency Phone</label>', unsafe_allow_html=True)
         em_phone = st.text_input("", key="em_phone", label_visibility="collapsed")
 
-        # Parent/Guardian consent checkbox (required) - placed near parent fields
-        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
-        parent_consent = st.checkbox("Parent/Guardian consent for student participation", key="parent_consent")
-        st.markdown('</div>', unsafe_allow_html=True)
-
         # Card 4 - Medical & Consent
         st.markdown(
             """
@@ -972,10 +954,25 @@ def render_register():
         st.markdown('<label class="required-label">Date</label>', unsafe_allow_html=True)
         sig_date = st.date_input("", value=date.today(), key="sig_date", label_visibility="collapsed")
 
-        # Terms checkbox moved to after Date and before Submit (required)
-        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
-        agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Place the Terms checkbox and the "View Terms & Policies" expander side-by-side (between Date and Submit)
+        cols = st.columns([1, 2])
+        with cols[0]:
+            agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
+        with cols[1]:
+            # Expander inside the form so the user can read the terms before submitting
+            with st.expander("View Terms & Policies", expanded=False):
+                st.markdown(
+                    """
+                    📜 **Terms & Policies**
+                    - Monthly fees must be paid on time.
+                    - Drop-in classes must be paid before each session.
+                    - Missed classes are non-refundable.
+                    - Students are expected to maintain discipline and regular attendance.
+                    - Opportunities for stage performances, community events & competitions will be provided.
+                    - Priority will be given to regular (monthly) students for performances and events.
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         # Submit button (must be inside the form)
         submitted = st.form_submit_button("Submit Form")
@@ -1004,9 +1001,6 @@ def render_register():
             missing_placeholders.append(required_placeholders["pref_time"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
-        # Parent consent required
-        if not st.session_state.get("parent_consent", False):
-            missing.append("Parent/Guardian consent for participation")
         # Terms checkbox required
         if not st.session_state.get("agree_terms", False):
             missing.append("Agreement to Terms & Policies")
@@ -1070,7 +1064,6 @@ def render_register():
                 "em_phone": em_phone,
                 "medical": medical,
                 "consent": consent,
-                "parent_consent": st.session_state.get("parent_consent", False),
                 "agreed_terms": st.session_state.get("agree_terms", False),
                 "signature": signature,
                 "sig_date": sig_date.isoformat(),
