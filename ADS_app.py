@@ -1,13 +1,12 @@
-# ADS_app.py - C04.1 (fixes)
-# Baseline: C03/C04
-# Fixes in this variant:
-# - Classes page: class types displayed as vertical cards (stacked), new banner moved to just above Register button
-# - Registration page: removed st.button() from inside form (caused StreamlitAPIException)
-#   - "View Terms & Policies" is now an expander placed above the form (opens text box)
-#   - Inside the form there is a required checkbox "I agree to the Terms & Policies" (st.checkbox inside form)
-#   - Submit button restored using st.form_submit_button()
-# - Minor layout tweaks to ensure the submit button and terms checkbox are visible and required
-# - Preserves slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
+# ADS_app.py - C04.2
+# Baseline: C04 (your chosen baseline)
+# C04.2 changes:
+# - Registration form: move "I agree to the Terms & Policies" checkbox to after Date and before Submit
+# - Add required "Parent/Guardian consent for student participation" checkbox (placed near Parent/Guardian fields)
+# - Ensure Submit button is inside the form and visible
+# - Keep Terms & Policies expander outside the form (for viewing)
+# - Classes page: ensure the three class types are displayed as vertical cards (stacked)
+# - Preserve slideshow, logo centering, dark form styling, early-bird pricing, and other C04 features
 
 import streamlit as st
 import pandas as pd
@@ -42,7 +41,6 @@ if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
-# agree_terms will be stored by the checkbox inside the form (no pre-init required)
 
 params = st.query_params
 if "page" in params:
@@ -794,7 +792,7 @@ def render_admin():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# REGISTRATION PAGE - vertical cards + terms expander + required checkbox + submit button
+# REGISTRATION PAGE - vertical cards + terms expander + required checkboxes + submit button
 def render_register():
     pricing = get_pricing()
     enroll_price = pricing["enrollment"]
@@ -941,6 +939,11 @@ def render_register():
         st.markdown('<label>Emergency Phone</label>', unsafe_allow_html=True)
         em_phone = st.text_input("", key="em_phone", label_visibility="collapsed")
 
+        # Parent/Guardian consent checkbox (required) - placed near parent fields
+        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
+        parent_consent = st.checkbox("Parent/Guardian consent for student participation", key="parent_consent")
+        st.markdown('</div>', unsafe_allow_html=True)
+
         # Card 4 - Medical & Consent
         st.markdown(
             """
@@ -963,16 +966,16 @@ def render_register():
         st.markdown('<label class="required-label">Allow photo/video for promotions?</label>', unsafe_allow_html=True)
         consent = st.radio("", ["", "Yes", "No"], key="consent", label_visibility="collapsed")
 
-        # Terms checkbox inside the form (required)
-        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
-        agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
-        st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown('<label class="required-label">Parent/Guardian Signature</label>', unsafe_allow_html=True)
         signature = st.text_input("", key="signature", placeholder=required_placeholders["signature"], label_visibility="collapsed")
 
         st.markdown('<label class="required-label">Date</label>', unsafe_allow_html=True)
         sig_date = st.date_input("", value=date.today(), key="sig_date", label_visibility="collapsed")
+
+        # Terms checkbox moved to after Date and before Submit (required)
+        st.markdown('<div style="margin-top:8px; margin-bottom:6px;">', unsafe_allow_html=True)
+        agree = st.checkbox("I agree to the Terms & Policies", key="agree_terms")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Submit button (must be inside the form)
         submitted = st.form_submit_button("Submit Form")
@@ -1001,6 +1004,9 @@ def render_register():
             missing_placeholders.append(required_placeholders["pref_time"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
+        # Parent consent required
+        if not st.session_state.get("parent_consent", False):
+            missing.append("Parent/Guardian consent for participation")
         # Terms checkbox required
         if not st.session_state.get("agree_terms", False):
             missing.append("Agreement to Terms & Policies")
@@ -1064,6 +1070,7 @@ def render_register():
                 "em_phone": em_phone,
                 "medical": medical,
                 "consent": consent,
+                "parent_consent": st.session_state.get("parent_consent", False),
                 "agreed_terms": st.session_state.get("agree_terms", False),
                 "signature": signature,
                 "sig_date": sig_date.isoformat(),
