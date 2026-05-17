@@ -462,7 +462,7 @@ def get_pricing():
     # Early bird: cheaper 4-class price, 8-class updated to $100
     if is_early_bird_active():
         return {
-            "four": 50,
+            "four": 60,
             "eight": 100,
             "enrollment": 50,  # $50/month early bird
         }
@@ -539,7 +539,7 @@ def render_early_banner():
               ★ Early Bird Offer ★&nbsp;&nbsp;
               <b>${enroll_price}/month for 3 months (June, July &amp; August)</b> — Limited to first 10 registrations!
               <br>
-              4 classes early-bird: <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
+              4 classes (regular): <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
             </div>
             """,
             unsafe_allow_html=True,
@@ -852,6 +852,7 @@ def render_register():
         "dob": "_req_dob",
         "pref_time": "_req_pref_time",
         "signature": "_req_signature",
+        "class_type": "_req_classtype",
     }
 
     # The form (submit button must be inside the form)
@@ -905,7 +906,7 @@ def render_register():
             "",
             [
                 "",
-                f"Regular (${enroll_price}/month)",
+                f"Early-Bird (${enroll_price}/month)",
                 f"4 Classes (${pricing['four']})",
                 f"8 Classes (${eight_price})",
                 "Drop-in ($15/session)",
@@ -913,7 +914,19 @@ def render_register():
             key="enroll",
             label_visibility="collapsed",
         )
-
+        st.markdown('<label class="required-label">Class Type</label>', unsafe_allow_html=True)
+        class_type = st.selectbox(
+            "",
+            [
+                "",
+                f"Tiny Stars(Age 5-8)",
+                f"Shiny Stars(Age 9+)",
+                "Dream Chasers(Ladies 19+)",
+            ],
+            key="class",
+            label_visibility="collapsed",
+        )
+        
         st.markdown('<label class="required-label">Mode</label>', unsafe_allow_html=True)
         mode = st.radio("", ["In-Person", "Online"], key="mode", label_visibility="collapsed")
 
