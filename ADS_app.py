@@ -15,22 +15,18 @@ from datetime import datetime, date
 # Robust rerun helper (place after imports)
 def safe_rerun():
     try:
-        # Preferred API when available
+        # Preferred simple API when available
         st.experimental_rerun()
-        return
     except Exception:
-        pass
+        # Fallback for Streamlit builds where experimental_rerun is not exposed
+        try:
+            from streamlit.runtime.scriptrunner import RerunException
+            raise RerunException()
+        except Exception:
+            # Last resort: set a session flag and stop execution so UI updates on next interaction
+            st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
+            st.stop()
 
-    # Try raising the internal RerunException (works on many Streamlit versions)
-    try:
-        from streamlit.runtime.scriptrunner import RerunException
-        raise RerunException()
-    except Exception:
-        pass
-
-    # Final fallback: toggle a session flag and stop execution so UI refreshes on next interaction
-    st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
-    st.stop()
 
 # Optional QR code support
 try:
@@ -893,7 +889,7 @@ def render_admin():
                                 df_new.to_csv(REG_FILE, index=False)
                                 st.success(f"Deleted {len(drop_indices)} row(s). Backup saved to: {backup_path if backup_path else 'not created'}")
                                 # Refresh the admin page to show updated table
-                                safe_rerun()
+                                st.safe_rerun()
                             except Exception as e:
                                 st.error(f"Error deleting rows: {e}")
         
