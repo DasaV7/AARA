@@ -15,18 +15,22 @@ from datetime import datetime, date
 # Robust rerun helper (place after imports)
 def safe_rerun():
     try:
-        # Preferred simple API when available
+        # Preferred API when available
         st.experimental_rerun()
+        return
     except Exception:
-        # Fallback for Streamlit builds where experimental_rerun is not exposed
-        try:
-            from streamlit.runtime.scriptrunner import RerunException
-            raise RerunException()
-        except Exception:
-            # Last resort: set a session flag and stop execution so UI updates on next interaction
-            st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
-            st.stop()
+        pass
 
+    # Try raising the internal RerunException (works on many Streamlit versions)
+    try:
+        from streamlit.runtime.scriptrunner import RerunException
+        raise RerunException()
+    except Exception:
+        pass
+
+    # Final fallback: toggle a session flag and stop execution so UI refreshes on next interaction
+    st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
+    st.stop()
 
 # Optional QR code support
 try:
