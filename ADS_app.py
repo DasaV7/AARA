@@ -12,6 +12,22 @@ import json
 import base64
 from datetime import datetime, date
 
+# Robust rerun helper (place after imports)
+def safe_rerun():
+    try:
+        # Preferred simple API when available
+        st.experimental_rerun()
+    except Exception:
+        # Fallback for Streamlit builds where experimental_rerun is not exposed
+        try:
+            from streamlit.runtime.scriptrunner import RerunException
+            raise RerunException()
+        except Exception:
+            # Last resort: set a session flag and stop execution so UI updates on next interaction
+            st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
+            st.stop()
+
+
 # Optional QR code support
 try:
     import qrcode
@@ -562,7 +578,7 @@ render_early_banner()
 # WHATSAPP BUTTON (Top Right)
 st.markdown(
     """
-    <a class="whatsapp-btn" href="https://wa.me/14692222222" target="_blank">
+    <a class="whatsapp-btn" href="https://wa.me/16318367972" target="_blank">
       💬
     </a>
     """,
@@ -798,7 +814,85 @@ def render_admin():
     else:
         st.success("Admin authenticated.")
 
+        # --- Admin: editable registrations table with delete capability ---
         regs = read_csv(REG_FILE)
+        
+        st.subheader("Registrations")
+        if regs.empty:
+            st.info("No registrations yet.")
+        else:
+            # Show a preview table for admin (read-only)
+            st.markdown("**Current registrations (preview)**")
+            st.dataframe(regs)
+        
+            st.markdown("---")
+        
+            # Build selection options: index | student_name | timestamp
+            # Use the dataframe index so we can drop by index reliably
+            regs = regs.reset_index(drop=False)  # keep original index in a column named 'index'
+            regs = regs.rename(columns={"index": "_orig_index"})
+            regs["_label"] = regs.apply(lambda r: f'{int(r["_orig_index"])}  |  {r.get("student_name","(no name)")}  |  {r.get("timestamp","")}', axis=1)
+        
+            options = regs["_label"].tolist()
+        
+            st.markdown("**Select registrations to delete**")
+            selected = st.multiselect("Pick rows to delete (index | name | timestamp)", options, key="admin_delete_select")
+        
+            # Quick actions
+            col_a, col_b, col_c = st.columns([1,1,1])
+            with col_a:
+                if st.button("Delete selected"):
+                    if not selected:
+                        st.warning("No rows selected. Choose one or more rows to delete.")
+                    else:
+                        # Show confirmation input to avoid accidental deletes
+                        st.session_state._pending_delete = selected
+                        st.warning("Type DELETE in the box below and press Confirm Delete to permanently remove the selected rows.")
+            with col_b:
+                if st.button("Delete all registrations"):
+                    st.session_state._pending_delete = options  # mark all for deletion
+                    st.warning("Delete ALL selected. Type DELETE in the box below and press Confirm Delete to permanently remove all rows.")
+            with col_c:
+                if st.button("Refresh list"):
+                    st.safe_rerun()
+        
+            # If there is a pending delete set, show confirmation input
+            if st.session_state.get("_pending_delete"):
+                st.markdown("**Confirm deletion**")
+                confirm_text = st.text_input("Type DELETE to confirm permanent deletion", key="admin_confirm_delete")
+                if st.button("Confirm Delete"):
+                    if confirm_text.strip().upper() != "DELETE":
+                        st.error("Confirmation text incorrect. Type DELETE (all caps) to confirm.")
+                    else:
+                        to_delete_labels = st.session_state.pop("_pending_delete", [])
+                        # Map labels back to original indices
+                        to_delete_df = regs[regs["_label"].isin(to_delete_labels)]
+                        if to_delete_df.empty:
+                            st.info("No matching rows found to delete.")
+                        else:
+                            # Backup current CSV
+                            try:
+                                backup_path = REG_FILE.replace(".csv", f".backup.{datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
+                                pd.read_csv(REG_FILE).to_csv(backup_path, index=False)
+                            except Exception as e:
+                                st.error(f"Failed to create backup: {e}")
+                                backup_path = None
+        
+                            # Drop rows by original index and save
+                            try:
+                                # Read original file to preserve any index differences
+                                df_orig = pd.read_csv(REG_FILE)
+                                # Build mask of rows to keep: drop rows whose index matches _orig_index in to_delete_df
+                                drop_indices = to_delete_df["_orig_index"].astype(int).tolist()
+                                # If original file has no explicit index column, we drop by row number
+                                df_new = df_orig.drop(index=drop_indices, errors='ignore').reset_index(drop=True)
+                                df_new.to_csv(REG_FILE, index=False)
+                                st.success(f"Deleted {len(drop_indices)} row(s). Backup saved to: {backup_path if backup_path else 'not created'}")
+                                # Refresh the admin page to show updated table
+                                st.safe_rerun()
+                            except Exception as e:
+                                st.error(f"Error deleting rows: {e}")
+        
         visits = read_csv(VISIT_FILE)
 
         st.subheader("Overview")
@@ -1045,6 +1139,8 @@ def render_register():
             missing.append("Gender")
         if not enrollment or not enrollment.strip():
             missing.append("Enrollment Type")
+        if not class_type or not class_type.strip():
+            missing.append("Class Type")
         if not mode:
             missing.append("Mode")
         if not level or not level.strip():
@@ -1106,6 +1202,7 @@ def render_register():
                 "email": email,
                 "address": address,
                 "enrollment": enrollment,
+                "class_type": class_type,
                 "mode": mode,
                 "workshops": "; ".join(workshops),
                 "level": level,
