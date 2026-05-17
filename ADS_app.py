@@ -854,7 +854,7 @@ def render_admin():
                     st.warning("Delete ALL selected. Type DELETE in the box below and press Confirm Delete to permanently remove all rows.")
             with col_c:
                 if st.button("Refresh list"):
-                    safe_rerun()
+                    st.safe_rerun()
         
             # If there is a pending delete set, show confirmation input
             if st.session_state.get("_pending_delete"):
