@@ -854,7 +854,7 @@ def render_admin():
                     st.warning("Delete ALL selected. Type DELETE in the box below and press Confirm Delete to permanently remove all rows.")
             with col_c:
                 if st.button("Refresh list"):
-                    st.safe_rerun()
+                    safe_rerun()
         
             # If there is a pending delete set, show confirmation input
             if st.session_state.get("_pending_delete"):
@@ -889,7 +889,7 @@ def render_admin():
                                 df_new.to_csv(REG_FILE, index=False)
                                 st.success(f"Deleted {len(drop_indices)} row(s). Backup saved to: {backup_path if backup_path else 'not created'}")
                                 # Refresh the admin page to show updated table
-                                st.safe_rerun()
+                                safe_rerun()
                             except Exception as e:
                                 st.error(f"Error deleting rows: {e}")
         
