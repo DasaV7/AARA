@@ -947,6 +947,7 @@ def render_register():
         "pref_time": "_req_pref_time",
         "signature": "_req_signature",
         "class_type": "_req_classtype",
+        "location_pref": "_req_location",
     }
 
     # The form (submit button must be inside the form)
@@ -1014,13 +1015,23 @@ def render_register():
             [
                 "",
                 f"Tiny Stars(Age 5-8)",
-                f"Shiny Stars(Age 9+)",
+                f"Shining Stars(Age 9+)",
                 "Dream Chasers(Ladies 19+)",
             ],
             key="class",
             label_visibility="collapsed",
         )
-        
+        st.markdown('<label class="required-label">Preferred Location</label>', unsafe_allow_html=True)
+        location_pref = st.selectbox(
+            "",
+            [
+                "",
+                f"Rockwall/Fate TX",
+                "Frisco, TX",
+            ],
+            key="location",
+            label_visibility="collapsed",
+        )
         st.markdown('<label class="required-label">Mode</label>', unsafe_allow_html=True)
         mode = st.radio("", ["In-Person", "Online"], key="mode", label_visibility="collapsed")
 
@@ -1141,6 +1152,8 @@ def render_register():
             missing.append("Enrollment Type")
         if not class_type or not class_type.strip():
             missing.append("Class Type")
+        if not location_pref or not location_pref.strip():
+            missing.append("Prefered Location")
         if not mode:
             missing.append("Mode")
         if not level or not level.strip():
@@ -1203,6 +1216,7 @@ def render_register():
                 "address": address,
                 "enrollment": enrollment,
                 "class_type": class_type,
+                "location_pref": location_pref,
                 "mode": mode,
                 "workshops": "; ".join(workshops),
                 "level": level,
