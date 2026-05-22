@@ -1295,9 +1295,21 @@ def render_register():
                 "signature": signature,
                 "sig_date": sig_date.isoformat(),
             }
+            #save_registration(record)
+            #st.success("Registration submitted successfully!")
             save_registration(record)
+            try:
+                notify_admin_email(record)
+            except Exception as e:
+                st.warning(f"Email notify failed: {e}")
+            
+            try:
+                notify_admin_whatsapp(record)
+            except Exception as e:
+                st.warning(f"WhatsApp notify failed: {e}")
+            
             st.success("Registration submitted successfully!")
-
+            
     st.markdown('</div>', unsafe_allow_html=True)
 
 # PAGE ROUTER
