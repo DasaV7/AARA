@@ -726,35 +726,49 @@ def render_home():
     # --- CINEMATIC BANNER USING st.video() ---
     st.markdown("""
     <style>
+    
+    /* Wrapper for centering and spacing */
     .cinematic-banner {
         width: 100%;
         max-width: 1100px;
         margin: 0 auto;
         padding-top: 10px;
-        animation: fadeLoop 8s infinite;
     }
-    .cinematic-banner video {
-        width: 100% !important;
-        height: auto !important;
+    
+    /* Video container with fade animation */
+    .cinematic-video {
+        width: 100%;
         aspect-ratio: 16 / 9;
         border-radius: 14px;
+        overflow: hidden;
         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+        animation: fadeLoop 8s infinite;
         object-fit: cover;
     }
+    
+    /* Fade-out + fade-in loop */
     @keyframes fadeLoop {
         0%   { opacity: 1; }
         80%  { opacity: 1; }
         90%  { opacity: 0; }
         100% { opacity: 1; }
     }
+    
+    /* Mobile adjustments */
+    @media (max-width: 480px) {
+        .cinematic-video {
+            border-radius: 10px;
+        }
+    }
+    
     </style>
     
     <div class="cinematic-banner">
+        <video class="cinematic-video" autoplay muted loop playsinline>
+            <source src="Copy of AARA.MP4" type="video/mp4">
+        </video>
+    </div>
     """, unsafe_allow_html=True)
-    
-    st.video("Copy of AARA.MP4")   # ← Copy of AARA.MP4 MUST MATCH EXACT FILENAME
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(
         f"""
