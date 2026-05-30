@@ -764,7 +764,7 @@ def render_home():
     """, unsafe_allow_html=True)
     
     # Your slowed video file
-    st.video("YOUR_VIDEO_FILE.mp4")
+    st.video("ADS_VIDEO_1.mp4")
     
     st.markdown("""
         </div>
