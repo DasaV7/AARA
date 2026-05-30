@@ -723,25 +723,27 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 # HOME PAGE - hero + slideshow
 def render_home():
     # Hero text
+    # --- CINEMATIC BANNER USING st.video() ---
     st.markdown("""
     <style>
     
-    /* Wrapper for centering and spacing */
+    /* Outer wrapper to center and size the banner */
     .cinematic-banner {
         width: 100%;
         max-width: 1100px;
         margin: 0 auto;
         padding-top: 10px;
+        animation: fadeLoop 8s infinite;
     }
     
-    /* Video container with fade animation */
-    .cinematic-video {
-        width: 100%;
+    /* Force Streamlit video to behave like a cinematic banner */
+    .cinematic-banner video {
+        width: 100% !important;
+        height: auto !important;
         aspect-ratio: 16 / 9;
         border-radius: 14px;
-        overflow: hidden;
         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
-        animation: fadeLoop 8s infinite;
+        object-fit: cover;
     }
     
     /* Fade-out + fade-in loop */
@@ -754,7 +756,7 @@ def render_home():
     
     /* Mobile adjustments */
     @media (max-width: 480px) {
-        .cinematic-video {
+        .cinematic-banner video {
             border-radius: 10px;
         }
     }
@@ -762,11 +764,13 @@ def render_home():
     </style>
     
     <div class="cinematic-banner">
-        <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="ADS_VIDEO_2.mov" type="video/quicktime">
-        </video>
-    </div>
     """, unsafe_allow_html=True)
+    
+    # Your slowed video file (MOV or MP4)
+    st.video("ADS_VIDEO_2.mov")   # or .mp4
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
     st.markdown(
