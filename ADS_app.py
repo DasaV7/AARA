@@ -763,7 +763,7 @@ def render_home():
     
     <div class="cinematic-banner">
         <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="YOUR_VIDEO_FILE.mov" type="video/quicktime">
+            <source src="ADS_VIDEO_2.mov" type="video/quicktime">
         </video>
     </div>
     """, unsafe_allow_html=True)
