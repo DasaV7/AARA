@@ -765,7 +765,7 @@ def render_home():
     
     <div class="cinematic-banner">
         <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="Copy of AARA.MP4" type="video/mp4">
+            <source src="AARA.MP4" type="video/MP4">
         </video>
     </div>
     """, unsafe_allow_html=True)
