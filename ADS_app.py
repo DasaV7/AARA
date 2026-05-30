@@ -723,6 +723,54 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 # HOME PAGE - hero + slideshow
 def render_home():
     # Hero text
+    # --- CINEMATIC VIDEO SECTION ---
+    st.markdown("""
+    <style>
+    .cinematic-wrapper {
+        width: 100%;
+        max-width: 1100px;     /* keeps it beautifully centered */
+        margin: 0 auto;
+        padding-top: 20px;
+        animation: fadeIn 1.2s ease-in-out;
+    }
+    
+    .cinematic-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;  /* forces cinematic shape */
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+    }
+    
+    /* Fade-in animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Mobile adjustments */
+    @media (max-width: 480px) {
+        .cinematic-wrapper {
+            padding-top: 10px;
+        }
+        .cinematic-video {
+            border-radius: 10px;
+        }
+    }
+    </style>
+    
+    <div class="cinematic-wrapper">
+        <div class="cinematic-video">
+    """, unsafe_allow_html=True)
+    
+    # Your slowed video file
+    st.video("YOUR_VIDEO_FILE.mp4")
+    
+    st.markdown("""
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown(
         f"""
         <div class="section" style="display:flex; flex-direction:column; gap:18px;">
