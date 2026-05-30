@@ -752,7 +752,7 @@ def render_home():
     <div class="cinematic-banner">
     """, unsafe_allow_html=True)
     
-    st.video("ADS_VIDEO_2.MOV")   # ← MUST MATCH EXACT FILENAME
+    st.video("Copy of AARA.MP4")   # ← Copy of AARA.MP4 MUST MATCH EXACT FILENAME
     
     st.markdown("</div>", unsafe_allow_html=True)
 
