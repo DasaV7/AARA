@@ -741,15 +741,15 @@ def render_home():
         border-radius: 14px;
         overflow: hidden;
         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
-        animation: fadeLoop 8s infinite; /* total loop duration */
+        animation: fadeLoop 8s infinite;
     }
     
     /* Fade-out + fade-in loop */
     @keyframes fadeLoop {
         0%   { opacity: 1; }
-        80%  { opacity: 1; }   /* play normally */
-        90%  { opacity: 0; }   /* fade out */
-        100% { opacity: 1; }   /* fade in */
+        80%  { opacity: 1; }
+        90%  { opacity: 0; }
+        100% { opacity: 1; }
     }
     
     /* Mobile adjustments */
@@ -763,10 +763,11 @@ def render_home():
     
     <div class="cinematic-banner">
         <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="ADS_VIDEO_2.MOV" type="video/quicktime">
+            <source src="YOUR_VIDEO_FILE.mov" type="video/quicktime">
         </video>
     </div>
     """, unsafe_allow_html=True)
+
 
     st.markdown(
         f"""
