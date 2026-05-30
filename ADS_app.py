@@ -764,9 +764,11 @@ def render_home():
     </style>
     
     <div class="cinematic-banner">
-        <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="AARA.MP4" type="video/MP4">
+        <video class="cinematic-video" autoplay muted loop 
+            <source src="https://github.com/DasaV7/AARA/blob/main/AARA.MP4">
         </video>
+            # <source src="AARA.MP4" type="video/MP4">
+        #</video>
     </div>
     """, unsafe_allow_html=True)
 
