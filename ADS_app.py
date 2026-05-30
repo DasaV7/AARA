@@ -723,51 +723,48 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 # HOME PAGE - hero + slideshow
 def render_home():
     # Hero text
-    # --- CINEMATIC VIDEO SECTION ---
     st.markdown("""
     <style>
-    .cinematic-wrapper {
+    
+    /* Wrapper for centering and spacing */
+    .cinematic-banner {
         width: 100%;
-        max-width: 1100px;     /* keeps it beautifully centered */
+        max-width: 1100px;
         margin: 0 auto;
-        padding-top: 20px;
-        animation: fadeIn 1.2s ease-in-out;
+        padding-top: 10px;
     }
     
+    /* Video container with fade animation */
     .cinematic-video {
         width: 100%;
-        aspect-ratio: 16 / 9;  /* forces cinematic shape */
+        aspect-ratio: 16 / 9;
         border-radius: 14px;
         overflow: hidden;
         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+        animation: fadeLoop 8s infinite; /* total loop duration */
     }
     
-    /* Fade-in animation */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to   { opacity: 1; transform: translateY(0); }
+    /* Fade-out + fade-in loop */
+    @keyframes fadeLoop {
+        0%   { opacity: 1; }
+        80%  { opacity: 1; }   /* play normally */
+        90%  { opacity: 0; }   /* fade out */
+        100% { opacity: 1; }   /* fade in */
     }
     
     /* Mobile adjustments */
     @media (max-width: 480px) {
-        .cinematic-wrapper {
-            padding-top: 10px;
-        }
         .cinematic-video {
             border-radius: 10px;
         }
     }
+    
     </style>
     
-    <div class="cinematic-wrapper">
-        <div class="cinematic-video">
-    """, unsafe_allow_html=True)
-    
-    # Your slowed video file
-    st.video("ADS_VIDEO_2.MOV")
-    
-    st.markdown("""
-        </div>
+    <div class="cinematic-banner">
+        <video class="cinematic-video" autoplay muted loop playsinline>
+            <source src="ADS_VIDEO_2.MOV" type="video/mp4">
+        </video>
     </div>
     """, unsafe_allow_html=True)
 
