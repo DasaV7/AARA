@@ -726,8 +726,6 @@ def render_home():
     # --- CINEMATIC BANNER USING st.video() ---
     st.markdown("""
     <style>
-    
-    /* Outer wrapper to center and size the banner */
     .cinematic-banner {
         width: 100%;
         max-width: 1100px;
@@ -735,8 +733,6 @@ def render_home():
         padding-top: 10px;
         animation: fadeLoop 8s infinite;
     }
-    
-    /* Force Streamlit video to behave like a cinematic banner */
     .cinematic-banner video {
         width: 100% !important;
         height: auto !important;
@@ -745,33 +741,20 @@ def render_home():
         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
         object-fit: cover;
     }
-    
-    /* Fade-out + fade-in loop */
     @keyframes fadeLoop {
         0%   { opacity: 1; }
         80%  { opacity: 1; }
         90%  { opacity: 0; }
         100% { opacity: 1; }
     }
-    
-    /* Mobile adjustments */
-    @media (max-width: 480px) {
-        .cinematic-banner video {
-            border-radius: 10px;
-        }
-    }
-    
     </style>
     
     <div class="cinematic-banner">
     """, unsafe_allow_html=True)
     
-    # Your slowed video file (MOV or MP4)
-    st.video("ADS_VIDEO_2.MOV")   # or .mp4
+    st.video("ADS_VIDEO_2.MOV")   # ← MUST MATCH EXACT FILENAME
     
     st.markdown("</div>", unsafe_allow_html=True)
-
-
 
     st.markdown(
         f"""
