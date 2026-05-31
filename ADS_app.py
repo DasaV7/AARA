@@ -713,13 +713,13 @@ render_header()
 render_early_banner()
 
 # WHATSAPP BUTTON (Top Right)
-st.markdown(
-    """
-    <a class="whatsapp-btn" href="https://wa.me/14692002020" target="_blank">
+st.markdown("""
+<div class="whatsapp-btn">
+    <a href="https://wa.me/14692002020" target="_blank">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
     </a>
-    """,unsafe_allow_html=True,
-)
+</div>
+""",unsafe_allow_html=True)
 
 st.markdown("""
 <div class="instagram-btn">
