@@ -716,10 +716,7 @@ render_early_banner()
 st.markdown(
     """
     <a href="https://wa.me/14692002020" target="_blank" style="
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 9999;
+    z-index: 9999;
     ">
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
          style="width: 60px; height: 60px;">
