@@ -719,7 +719,6 @@ st.markdown(
     z-index: 9999;
     ">
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-         style="width: 60px; height: 60px;">
     </a>
     """,unsafe_allow_html=True,
 )
