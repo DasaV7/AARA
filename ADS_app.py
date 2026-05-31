@@ -236,7 +236,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   background: #25D366;
   color: white;
   padding: 14px 16px;
-  border-radius: 50%;
+  border-radius: 20%;
   font-size: 22px;
   text-decoration: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -250,7 +250,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   width: 55px;
   height: 55px;
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-  border-radius: 50%;
+  border-radius: 20%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -284,7 +284,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   }}
   .instagram-btn {{
     top: 60px;
-    right: 85px;
+    right: 75px;
   }}
 }}
 
