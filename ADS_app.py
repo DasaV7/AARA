@@ -243,6 +243,12 @@ html, body, [data-testid="stAppViewContainer"] {{
   z-index: 9999;
 }}
 
+.whatsapp-btn img {{
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}}
+
 .instagram-btn {{
   position: fixed;
   top: 70px;
