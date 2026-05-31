@@ -231,9 +231,9 @@ html, body, [data-testid="stAppViewContainer"] {{
   position: fixed;
   top: 70px;
   right: 20px;
-    width: 55px;
+  width: 55px;
   height: 55px;
-  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  background-color: #25D366; /* 
   border-radius: 20%;
   display: flex;
   align-items: center;
