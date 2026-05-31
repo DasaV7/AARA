@@ -716,7 +716,7 @@ render_early_banner()
 st.markdown(
     """
     <a class="whatsapp-btn" href="https://wa.me/14692002020" target="_blank">
-      💬
+      <img src="whatsapp.png" style="width: 60px; height: 60px;">
     </a>
     """,unsafe_allow_html=True,
 )
