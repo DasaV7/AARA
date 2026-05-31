@@ -724,7 +724,7 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 def render_home():
     # Hero text
     # --- CINEMATIC BANNER USING st.video() ---
-     st.markdown("""
+    st.markdown("""
     <style>
     
     /* Wrapper for centering and spacing */
