@@ -8,6 +8,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import time
 import json
 import base64
 from datetime import datetime, date
@@ -27,7 +28,93 @@ def safe_rerun():
             st.session_state._force_refresh = not st.session_state.get("_force_refresh", False)
             st.stop()
 
+# def ensure_reg_file(path):
+#     folder = os.path.dirname(path)
+#     os.makedirs(folder, exist_ok=True)
 
+#     if not os.path.exists(path) or os.path.getsize(path) == 0:
+#         with open(path, "w") as f:
+#             f.write("timestamp,student_name,dob,gender,school,parent,phone,email,address,enrollment,class_type,location_pref,mode,workshops,level,style,pref_time,experience,em_name,em_rel,em_phone,medical,consent,agreed_terms,signature,sig_date,_label\n")
+
+# ensure_reg_file(REG_FILE)
+
+# def safe_write_csv(df, path):
+#     tmp = path + ".tmp"
+#     df.to_csv(tmp, index=False)
+#     os.replace(tmp, path)
+
+
+# def ensure_reg_file(path, headers):
+#     os.makedirs(os.path.dirname(path), exist_ok=True)
+#     if not os.path.exists(path) or os.path.getsize(path) == 0:
+#         pd.DataFrame(columns=headers).to_csv(path, index=False)
+
+# ensure_reg_file(REG_FILE, REG_HEADERS)
+
+#timestamp,student_name,dob,gender,school,parent,phone,email,address,enrollment,class_type,location_pref,mode,workshops,level,style,pref_time,experience,em_name,em_rel,em_phone,medical,consent,agreed_terms,signature,sig_date,_label
+# -----------------------------
+# 1. Correct GitHub repo paths
+# -----------------------------
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data1")
+REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
+VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
+
+# -----------------------------------------
+# 2. Ensure folder + CSV exist with header
+# -----------------------------------------
+REG_HEADERS = [
+"timestamp","student_name","dob","gender","school","parent","phone","email","address","enrollment","class_type","location_pref","mode","workshops","level","style","pref_time","experience","em_name","em_rel","em_phone","medical","consent","agreed_terms","signature","sig_date","_label"
+]
+
+
+# -----------------------------------------
+# 3. Safe CSV reader (no parser errors)
+# -----------------------------------------
+def read_csv(path):
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return pd.DataFrame(columns=REG_HEADERS)
+
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        # fallback parser
+        try:
+            return pd.read_csv(path, engine="python", on_bad_lines="skip")
+        except Exception:
+            return pd.DataFrame(columns=REG_HEADERS)
+
+# -----------------------------------------
+# 4. Atomic safe writer (no corruption)
+# -----------------------------------------
+def safe_write_csv(df, path):
+    tmp = path + ".tmp"
+    df.to_csv(tmp, index=False)
+    os.replace(tmp, path)
+
+# -----------------------------------------
+# 5. Append registration safely
+# -----------------------------------------
+def save_registration(record):
+    df_new = pd.DataFrame([record])
+
+    if os.path.exists(REG_FILE):
+        df_old = read_csv(REG_FILE)
+
+        # ensure all columns exist
+        for col in df_old.columns:
+            if col not in df_new.columns:
+                df_new[col] = ""
+
+        for col in df_new.columns:
+            if col not in df_old.columns:
+                df_old[col] = ""
+
+        df_final = pd.concat([df_old, df_new], ignore_index=True)
+    else:
+        df_final = df_new
+
+    safe_write_csv(df_final, REG_FILE)
+    
 # Optional QR code support
 try:
     import qrcode
@@ -43,10 +130,11 @@ st.set_page_config(
 )
 
 # DATA PATHS
-DATA_DIR = "data"
+#DATA_DIR = "data1"
 os.makedirs(DATA_DIR, exist_ok=True)
-REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
-VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
+#REG_FILE = os.path.join(DATA_DIR, "registrations.csv")
+#REG_FILE = os.path.join(os.path.dirname(__file__), "data1", "registrations.csv")
+#VISIT_FILE = os.path.join(DATA_DIR, "site_visits.csv")
 LOGO_PATH = "logo.png"
 
 # SESSION STATE defaults
@@ -70,6 +158,7 @@ RED = "#8b0000"
 TEXT = "#f5e8c7"
 CARD_BG = "#111111"
 BORDER = "#3a3a3a"
+
 
 # CSS: C02 global CSS (form fixes) + slideshow CSS (working engine) + logo centering override + button overrides
 # Added .class-grid for 3-column responsive layout and equal-height card rules
@@ -137,10 +226,13 @@ html, body, [data-testid="stAppViewContainer"] {{
   background: {GOLD_SOFT};
 }}
 
+/* --- DESKTOP / LARGE SCREENS --- */
 .whatsapp-btn {{
   position: fixed;
   top: 70px;
   right: 20px;
+  width: 55px;
+  height: 55px;
   background: #25D366;
   color: white;
   padding: 14px 16px;
@@ -149,6 +241,51 @@ html, body, [data-testid="stAppViewContainer"] {{
   text-decoration: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   z-index: 9999;
+}}
+
+.instagram-btn {{
+  position: fixed;
+  top: 30px;
+  right: 70px; /* left of WhatsApp */
+  width: 55px;
+  height: 55px;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
+}}
+
+.instagram-btn img {{
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}}
+
+/* --- MOBILE (VERTICAL) FIX --- */
+@media (max-width: 480px) {{
+  .whatsapp-btn {{
+    top: 40px;   /* moved DOWN to avoid Streamlit banner */
+    right: 15px;
+  }}
+  .instagram-btn {{
+    top: 40px;   /* same vertical alignment */
+    right: 75px;  /* still left of WhatsApp */
+  }}
+}}
+
+/* --- MOBILE (HORIZONTAL / LANDSCAPE) FIX --- */
+@media (max-height: 480px) {{
+  .whatsapp-btn {{
+    top: 60px;
+    right: 15px;
+  }}
+  .instagram-btn {{
+    top: 60px;
+    right: 85px;
+  }}
 }}
 
 .bottom-nav {{
@@ -469,37 +606,9 @@ def get_registration_count():
             return 0
     return 0
 
-# ---------------------------------------------------------
-# SCHEMA MIGRATION (B10)
-# Ensures CSV always matches the current form fields
-# ---------------------------------------------------------
-def migrate_csv_schema(csv_path: str, required_columns: list):
-    # If file does not exist, create it with correct header
-    if not os.path.exists(csv_path):
-        pd.DataFrame(columns=required_columns).to_csv(csv_path, index=False)
-        return
-
-    try:
-        df = pd.read_csv(csv_path)
-    except Exception:
-        # If unreadable, recreate clean file
-        pd.DataFrame(columns=required_columns).to_csv(csv_path, index=False)
-        return
-
-    # Add missing columns
-    for col in required_columns:
-        if col not in df.columns:
-            df[col] = ""
-
-    # Remove extra columns (optional — keeps CSV clean)
-    df = df[required_columns]
-
-    # Save updated schema
-    df.to_csv(csv_path, index=False)
-
 
 def is_early_bird_active():
-    return get_registration_count() < 10
+    return get_registration_count() < 0
 
 
 def get_pricing():
@@ -519,41 +628,6 @@ def get_pricing():
 
 
 log_visit()
-
-# ---------------------------------------------------------
-# MIGRATE REGISTRATION CSV SCHEMA
-# ---------------------------------------------------------
-REG_COLUMNS = [
-    "timestamp",
-    "student_name",
-    "dob",
-    "gender",
-    "school",
-    "parent",
-    "phone",
-    "email",
-    "address",
-    "enrollment",
-    "class_type",
-    "location_pref",
-    "mode",
-    "workshops",
-    "level",
-    "style",
-    "pref_time",
-    "experience",
-    "em_name",
-    "em_rel",
-    "em_phone",
-    "medical",
-    "consent",
-    "signature",
-    "sig_date"
-]
-
-migrate_csv_schema(REG_FILE, REG_COLUMNS)
-
-
 
 # Helper: convert image file to base64 string
 def _img_to_base64(path):
@@ -628,7 +702,7 @@ def render_early_banner():
         st.markdown(
             f"""
             <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:transparent; color:{GOLD_SOFT}; padding:8px 16px; border-radius:999px;">
-              Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> · 8 classes: <b>${pricing['eight']}</b>
+              Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> <br> · 8 classes: <b>${pricing['eight']}</b> · Siblings offer: <b>$10</b>
             </div>
             """,
             unsafe_allow_html=True,
@@ -647,6 +721,14 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+st.markdown("""
+<div class="instagram-btn">
+    <a href="https://www.instagram.com/reel/DYjC8gHtVBT/?igsh=NmJnNGR5Z3BlNHd3" target="_blank">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png">
+    </a>
+</div>
+""", unsafe_allow_html=True)
 
 # QR CODE SECTION
 def render_qr_section():
@@ -721,6 +803,7 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
     st.markdown(html, unsafe_allow_html=True)
 
 # HOME PAGE - hero + slideshow
+# HOME PAGE - hero + slideshow
 def render_home():
     # Hero text
     # --- CINEMATIC BANNER USING st.video() ---
@@ -765,7 +848,7 @@ def render_home():
     
     <div class="cinematic-banner">
        <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="https://raw.githubusercontent.com/DasaV7/AARA/main/AARA.MP4" type="video/mp4">
+            <source src="https://raw.githubusercontent.com/rekharaomahendran-hash/AARA_ADS/main/AARA.MP4" type="video/mp4">
        </video>
     </div>
     """, unsafe_allow_html=True)
@@ -874,6 +957,31 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
+    # Address card under Register Now (paste after the Register CTA)
+    studio_address = "AARA Dance Studio, Fate, Rockwall, Dallas, TX"
+    google_short_link = "https://maps.app.goo.gl/6SFoVDtau8oQULao9?g_st=ic"
+    # Apple Maps fallback using the address (URL-encoded)
+    import urllib.parse
+    apple_maps_link = f"https://maps.apple.com/?q={urllib.parse.quote(studio_address)}"
+    
+    st.markdown(
+        f"""
+        <div class="classes-address-row">
+          <div class="address-card">
+            <div class="title">Visit Us</div>
+            <div style="color:#f5e8c7; line-height:1.4;">{studio_address}</div>
+            <div style="margin-top:10px;" class="address-links">
+              <a href="{google_short_link}" target="_blank" rel="noopener">Open in Google Maps</a>
+              <a href="{apple_maps_link}" target="_blank" rel="noopener">Open in Apple Maps</a>
+            </div>
+            <div style="margin-top:8px; color:#9ca3af; font-size:0.85rem;">
+              Parking available · Please arrive 10 minutes early
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ABOUT PAGE
@@ -924,6 +1032,17 @@ def render_admin():
                 st.error("Incorrect password.")
     else:
         st.success("Admin authenticated.")
+
+        # --- Debug: show runtime file info for registrations ---
+        #import os, time
+        st.markdown("**Debug file info**")
+        st.write("REG_FILE:", REG_FILE)
+        st.write("Absolute path:", os.path.abspath(REG_FILE))
+        st.write("Exists:", os.path.exists(REG_FILE))
+        if os.path.exists(REG_FILE):
+            st.write("Size bytes:", os.path.getsize(REG_FILE))
+            st.write("Last modified:", time.ctime(os.path.getmtime(REG_FILE)))
+        st.write("Files in data dir:", os.listdir(os.path.dirname(os.path.abspath(REG_FILE))))
 
         # --- Admin: editable registrations table with delete capability ---
         regs = read_csv(REG_FILE)
@@ -1036,6 +1155,48 @@ def render_admin():
         if st.button("Logout"):
             st.session_state.admin_authenticated = False
             st.rerun()
+        # -------------------------------
+        # Admin: Download + Upload/Restore
+        # -------------------------------
+        st.markdown("### Backup / Restore Registrations")
+        
+        # Download current runtime CSV
+        if os.path.exists(REG_FILE):
+            with open(REG_FILE, "rb") as f:
+                st.download_button(
+                    "⬇️ Download current registrations.csv",
+                    f,
+                    file_name="registrations.csv",
+                    mime="text/csv"
+                )
+        
+        # Upload a CSV to restore
+        uploaded = st.file_uploader(
+            "⬆️ Upload a registrations.csv file to restore",
+            type=["csv"],
+            key="admin_upload_restore"
+        )
+        
+        if uploaded is not None:
+            try:
+                df_uploaded = pd.read_csv(uploaded)
+        
+                # Ensure all expected columns exist
+                for col in REG_HEADERS:
+                    if col not in df_uploaded.columns:
+                        df_uploaded[col] = ""
+        
+                # Reorder columns
+                df_uploaded = df_uploaded[REG_HEADERS]
+        
+                # Save safely
+                safe_write_csv(df_uploaded, REG_FILE)
+        
+                st.success("Registrations restored successfully from uploaded file.")
+                safe_rerun()
+        
+            except Exception as e:
+                st.error(f"Failed to restore file: {e}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1059,6 +1220,9 @@ def render_register():
         "signature": "_req_signature",
         "class_type": "_req_classtype",
         "location_pref": "_req_location",
+        "parent": "parent",
+        "phone": "phone",
+        "email": "email",
     }
 
     # The form (submit button must be inside the form)
@@ -1112,9 +1276,9 @@ def render_register():
             "",
             [
                 "",
-                f"Early-Bird (${enroll_price}/month)",
-                f"4 Classes (${pricing['four']})",
-                f"8 Classes (${eight_price})",
+                f"Siblings Price (${enroll_price-10}/month)",
+                f"4 Classes (${pricing['four']}/month)",
+                f"8 Classes (${eight_price}/month)",
                 "Drop-in ($15/session)",
             ],
             key="enroll",
@@ -1138,7 +1302,8 @@ def render_register():
             [
                 "",
                 f"Rockwall/Fate TX",
-                "Frisco, TX",
+                f"Frisco, TX",
+                "Plano/Wylie TX",
             ],
             key="location",
             label_visibility="collapsed",
@@ -1147,7 +1312,7 @@ def render_register():
         mode = st.radio("", ["In-Person", "Online"], key="mode", label_visibility="collapsed")
 
         st.markdown('<label>Workshops</label>', unsafe_allow_html=True)
-        workshops = st.multiselect("", ["Ladies Kuthu Workshop", "Couple Dance Fitness Workshop"], key="workshops", label_visibility="collapsed")
+        workshops = st.multiselect("", ["Women’s Folk Funk Workshop", "Fit & Flow Couples Edition"], key="workshops", label_visibility="collapsed")
 
         st.markdown('<label class="required-label">Level</label>', unsafe_allow_html=True)
         level = st.selectbox("", ["", "Beginner", "Intermediate", "Advanced"], key="level", label_visibility="collapsed")
@@ -1174,13 +1339,13 @@ def render_register():
             unsafe_allow_html=True,
         )
 
-        st.markdown('<label>Parent/Guardian Name</label>', unsafe_allow_html=True)
+        st.markdown('<label class="required-label">Parent/Guardian Name</label>', unsafe_allow_html=True)
         parent = st.text_input("", key="parent", label_visibility="collapsed")
 
-        st.markdown('<label>Phone Number</label>', unsafe_allow_html=True)
+        st.markdown('<label class="required-label">Phone Number</label>', unsafe_allow_html=True)
         phone = st.text_input("", key="phone", label_visibility="collapsed")
 
-        st.markdown('<label>Email Address</label>', unsafe_allow_html=True)
+        st.markdown('<label class="required-label">Email Address</label>', unsafe_allow_html=True)
         email = st.text_input("", key="email", label_visibility="collapsed")
 
         st.markdown('<label>Address</label>', unsafe_allow_html=True)
@@ -1272,6 +1437,15 @@ def render_register():
         if not pref_time or not pref_time.strip():
             missing.append("Preferred Days/Time")
             missing_placeholders.append(required_placeholders["pref_time"])
+        if not parent or not parent.strip():
+            missing.append("Parent/Guardian Name")
+            missing_placeholders.append(required_placeholders["parent"])
+        if not phone or not phone.strip():
+            missing.append("Phone Number")
+            missing_placeholders.append(required_placeholders["phone"])
+        if not email or not email.strip():
+            missing.append("Email ID")
+            missing_placeholders.append(required_placeholders["email"])
         if not consent or not consent.strip():
             missing.append("Media Consent")
         # Terms checkbox required
@@ -1343,21 +1517,9 @@ def render_register():
                 "signature": signature,
                 "sig_date": sig_date.isoformat(),
             }
-            #save_registration(record)
-            #st.success("Registration submitted successfully!")
             save_registration(record)
-            try:
-                notify_admin_email(record)
-            except Exception as e:
-                st.warning(f"Email notify failed: {e}")
-            
-            try:
-                notify_admin_whatsapp(record)
-            except Exception as e:
-                st.warning(f"WhatsApp notify failed: {e}")
-            
             st.success("Registration submitted successfully!")
-            
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # PAGE ROUTER
