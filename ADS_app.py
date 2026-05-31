@@ -245,7 +245,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .instagram-btn {{
   position: fixed;
-  top: 30px;
+  top: 70px;
   right: 70px; /* left of WhatsApp */
   width: 55px;
   height: 55px;
