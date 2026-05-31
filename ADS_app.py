@@ -235,6 +235,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   height: 55px;
   background: #25D366;
   color: white;
+  align-items: center;
   padding: 14px 16px;
   border-radius: 20%;
   font-size: 22px;
