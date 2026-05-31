@@ -231,16 +231,13 @@ html, body, [data-testid="stAppViewContainer"] {{
   position: fixed;
   top: 70px;
   right: 20px;
-  width: 55px;
+    width: 55px;
   height: 55px;
-  background: #25D366;
-  color: white;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-radius: 20%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 16px;
-  border-radius: 20%;
-  font-size: 22px;
-  text-decoration: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   z-index: 9999;
 }}
