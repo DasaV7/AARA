@@ -724,7 +724,7 @@ def render_slideshow(slide_paths, per_slide_seconds=6):
 def render_home():
     # Hero text
     # --- CINEMATIC BANNER USING st.video() ---
-    st.markdown("""
+     st.markdown("""
     <style>
     
     /* Wrapper for centering and spacing */
@@ -765,10 +765,11 @@ def render_home():
     
     <div class="cinematic-banner">
        <video class="cinematic-video" autoplay muted loop playsinline>
-            <source src="https://github.com/DasaV7/AARA/blob/main/AARA.MP4">
-        </video>
+            <source src="https://raw.githubusercontent.com/DasaV7/AARA/main/AARA.MP4" type="video/mp4">
+       </video>
     </div>
     """, unsafe_allow_html=True)
+
 
     st.markdown(
         f"""
