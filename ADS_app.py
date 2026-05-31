@@ -233,7 +233,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   right: 20px;
   width: 55px;
   height: 55px;
-  background-color: #25D366; /* 
+  background-color:#25D366;
   border-radius: 20%;
   display: flex;
   align-items: center;
