@@ -715,8 +715,8 @@ render_early_banner()
 # WHATSAPP BUTTON (Top Right)
 st.markdown(
     """
-    <a href="https://wa.me/14692002020" target="_blank" style="">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+    <a class="whatsapp-btn" href="https://wa.me/14692002020" target="_blank">
+      💬
     </a>
     """,unsafe_allow_html=True,
 )
