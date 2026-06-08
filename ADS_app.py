@@ -234,7 +234,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   width: 55px;
   height: 55px;
   background-color:#25D366;
-  border-radius: 20%;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +255,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   width: 55px;
   height: 55px;
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-  border-radius: 20%;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -289,7 +289,7 @@ html, body, [data-testid="stAppViewContainer"] {{
   }}
   .instagram-btn {{
     top: 60px;
-    right: 75px;
+    right: 85px;
   }}
 }}
 
@@ -645,7 +645,7 @@ def _img_to_base64(path):
 
 # HEADER - centered glowing logo (used on all pages)
 def render_header():
-    # Use a full-width HTML block with embedded base64 image to ensure perfect centering on desktop + mobile
+    # Use a full-width HTML block with ded base64 image to ensure perfect centering on desktop + mobile
     if os.path.exists(LOGO_PATH):
         b64 = _img_to_base64(LOGO_PATH)
         if b64:
@@ -667,7 +667,7 @@ def render_header():
             """,
             unsafe_allow_html=True,
         )
-
+#·  · Rockwall · Dallas, TX
     st.markdown(
         f"""
         <div style="text-align:center; margin-top:6px;">
@@ -678,7 +678,7 @@ def render_header():
             Where Passion Meets Performance
           </div>
           <div style="font-size:0.95rem; color:{GOLD_SOFT};">
-            · Fate · Rockwall · Dallas, TX
+            · Rockwall/Fate  · Frisco/Little Elm  · Dallas, TX
           </div>
         </div>
         """,
@@ -704,15 +704,15 @@ def render_early_banner():
         )
     else:
         # If early bird not active, show a subtle banner with current pricing
+        #Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> <br> · 8 classes: <b>${pricing['eight']}</b> · Siblings offer: <b>$10</b>
         st.markdown(
             f"""
             <div class="early-banner" style="max-width:980px; margin:10px auto 16px auto; text-align:center; border:1px solid {GOLD}; background:transparent; color:{GOLD_SOFT}; padding:8px 16px; border-radius:999px;">
-              Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> <br> · 8 classes: <b>${pricing['eight']}</b> · Siblings offer: <b>$10</b>
+              Enrollment: <b>${pricing['enrollment']}</b>/month · 4 classes: <b>${pricing['four']}</b> <br> · Siblings offer: <b>$10</b>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
 
 render_header()
 render_early_banner()
@@ -720,15 +720,15 @@ render_early_banner()
 # WHATSAPP BUTTON (Top Right)
 st.markdown("""
 <div class="whatsapp-btn">
-    <a href="https://wa.me/14692002020" target="_blank">
+    <a href="https://wa.me/16318367972" target="_blank">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
     </a>
 </div>
 """,unsafe_allow_html=True)
-
+#https://www.instagram.com//DYjC8gHtVBT/?igsh=NmJnNGR5Z3BlNHd3
 st.markdown("""
 <div class="instagram-btn">
-    <a href="https://www.instagram.com/reel/DYjC8gHtVBT/?igsh=NmJnNGR5Z3BlNHd3" target="_blank">
+    <a href="https://www.instagram.com/aaradancestudio_dallas" target="_blank">
         <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png">
     </a>
 </div>
@@ -875,6 +875,17 @@ def render_home():
         unsafe_allow_html=True,
     )
 
+    st.markdown("""
+    <blockquote 
+        class="instagram-media" 
+        data-instgrm-permalink="https://www.instagram.com/reel/DY05YpjOP8n/?utm_source=ig_embed&utm_campaign=loading"
+        data-instgrm-version="14"
+        style="background:#FFF; border:0; margin:0 auto; padding:0; width:100%; max-width:540px;"
+    ></blockquote>
+    
+    <script async src="//www.instagram.com/embed.js"></script>
+    """, unsafe_allow_html=True)
+    
     # Collect slideshow images (slide1.jpg ... slide5.jpg)
     image_paths = []
     for i in range(1, 6):
@@ -884,7 +895,7 @@ def render_home():
 
     # Render CSS-only slideshow (full-width inside content column)
     render_slideshow(image_paths, per_slide_seconds=6)
-
+    
     render_qr_section()
 
 # CLASSES PAGE (dynamic pricing) with responsive grid (3 columns on desktop)
@@ -909,19 +920,19 @@ def render_classes():
               <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Tiny Stars (Ages 5-8)</div>
               <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
               <div style="color:{GOLD_SOFT}; margin-top:8px;">Wed &amp; Fri · 6:30-7:30 PM</div>
-              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b></div>
             </div>
             <div class="card-footer" style="text-align:center;">
               <a class="btn-primary" href="/?page=Register">Register</a>
             </div>
           </div>
-
+          
           <div class="class-card">
             <div class="card-content">
               <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Shining Stars (Ages 9+)</div>
               <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
               <div style="color:{GOLD_SOFT}; margin-top:8px;">Tue · 7-8 PM</div>
-              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b></div>
             </div>
             <div class="card-footer" style="text-align:center;">
               <a class="btn-primary" href="/?page=Register">Register</a>
@@ -932,12 +943,26 @@ def render_classes():
             <div class="card-content">
               <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Dream Chasers (Ladies 18+)</div>
               <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
-              <div style="color:{GOLD_SOFT}; margin-top:8px;">Thu 6:30-7:30 PM · Sat 10:30-11:30 AM</div>
-              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b> · <b>8 classes: ${eight}</b></div>
+              <div style="color:{GOLD_SOFT}; margin-top:8px;">Thu 6:30-7:30 PM · Fri 6:30-7:30 PM</div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b></div>
             </div>
             <div class="card-footer" style="text-align:center;">
               <a class="btn-primary" href="/?page=Register">Register</a>
             </div>
+            </div> 
+            
+          <div class="class-card">
+            <div class="card-content">
+              <div style="font-size:1.05rem; font-weight:700; color:{GOLD}; margin-bottom:8px;">Couple Groove (18+)</div>
+              <div style="color:{GOLD_SOFT};">Beginner / Intermediate</div>
+              <div style="color:{GOLD_SOFT}; margin-top:8px;">Fri 7:30-8:30 PM</div>
+              <div style="color:{GOLD_SOFT}; margin-top:12px;"><b>4 classes: ${four}</b></div>
+            </div>
+            <div class="card-footer" style="text-align:center;">
+              <a class="btn-primary" href="/?page=Register">Register</a>
+            </div>
+            
+          </div>   
           </div>
         </div>
         """,
@@ -961,32 +986,54 @@ def render_classes():
         unsafe_allow_html=True,
     )
 
-    # Address card under Register Now (paste after the Register CTA)
-    studio_address = "AARA Dance Studio, Fate, Rockwall, Dallas, TX"
-    google_short_link = "https://maps.app.goo.gl/6SFoVDtau8oQULao9?g_st=ic"
-    # Apple Maps fallback using the address (URL-encoded)
-    import urllib.parse
-    apple_maps_link = f"https://maps.apple.com/?q={urllib.parse.quote(studio_address)}"
-    
-    st.markdown(
-        f"""
-        <div class="classes-address-row">
-          <div class="address-card">
-            <div class="title">Visit Us</div>
-            <div style="color:#f5e8c7; line-height:1.4;">{studio_address}</div>
-            <div style="margin-top:10px;" class="address-links">
-              <a href="{google_short_link}" target="_blank" rel="noopener">Open in Google Maps</a>
-              <a href="{apple_maps_link}" target="_blank" rel="noopener">Open in Apple Maps</a>
-            </div>
-            <div style="margin-top:8px; color:#9ca3af; font-size:0.85rem;">
-              Parking available · Please arrive 10 minutes early
-            </div>
-          </div>
+# --- ADDRESS CARDS (MULTI‑LOCATION SUPPORT) ---
+
+# Location 1 — Fate / Rockwall / Dallas
+studio_address_1 = "AARA Dance Studio, Rockwall/Fate, Dallas, TX"
+google_short_link_1 = "https://maps.app.goo.gl/6SFoVDtau8oQULao9?g_st=ic"
+
+import urllib.parse
+apple_maps_link_1 = f"https://maps.apple.com/?q={urllib.parse.quote(studio_address_1)}"
+
+# Location 2 — Frisco (Once every couple of hours)
+studio_address_2 = "5444 FM 423, Frisco, TX 75034"
+google_short_link_2 = "https://maps.app.goo.gl/dP4QgbkXWA1aCGqy7"
+apple_maps_link_2 = f"https://maps.apple.com/?q={urllib.parse.quote(studio_address_2)}"
+
+st.markdown(
+    f"""
+    <div class="classes-address-row" style="display:flex; gap:20px; flex-wrap:wrap;">
+
+      <!-- LOCATION 1 -->
+      <div class="address-card" style="flex:1; min-width:260px;">
+        <div class="title">Visit Us</div>
+        <div style="color:#f5e8c7; line-height:1.4;">{studio_address_1}</div>
+        <div style="margin-top:10px;" class="address-links">
+          <a href="{google_short_link_1}" target="_blank" rel="noopener">Open in Google Maps</a>
+          <a href="{apple_maps_link_1}" target="_blank" rel="noopener">Open in Apple Maps</a>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        <div style="margin-top:8px; color:#9ca3af; font-size:0.85rem;">
+          Parking available · Please arrive 10 minutes early
+        </div>
+      </div>
+
+      <!-- LOCATION 2 -->
+      <div class="address-card" style="flex:1; min-width:260px;">
+        <div class="title">Frisco/Little Elm Location</div>
+        <div style="color:#f5e8c7; line-height:1.4;">{studio_address_2}</div>
+        <div style="margin-top:10px;" class="address-links">
+          <a href="{google_short_link_2}" target="_blank" rel="noopener">Open in Google Maps</a>
+          <a href="{apple_maps_link_2}" target="_blank" rel="noopener">Open in Apple Maps</a>
+        </div>
+        <div style="margin-top:8px; color:#9ca3af; font-size:0.85rem;">
+          Classes available every Friday evening · Limited slots only
+        </div>
+      </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ABOUT PAGE
 def render_about():
@@ -1282,7 +1329,7 @@ def render_register():
                 "",
                 f"Siblings Price (${enroll_price-10}/month)",
                 f"4 Classes (${pricing['four']}/month)",
-                f"8 Classes (${eight_price}/month)",
+                f"Couple Groove - 4 Classes (${2*enroll_price}/couple)",
                 "Drop-in ($15/session)",
             ],
             key="enroll",
@@ -1295,7 +1342,8 @@ def render_register():
                 "",
                 f"Tiny Stars(Age 5-8)",
                 f"Shining Stars(Age 9+)",
-                "Dream Chasers(Ladies 19+)",
+                f"Dream Chasers(Ladies 18+)",
+                "Couples Groove (18+)",
             ],
             key="class",
             label_visibility="collapsed",
@@ -1306,8 +1354,7 @@ def render_register():
             [
                 "",
                 f"Rockwall/Fate TX",
-                f"Frisco, TX",
-                "Plano/Wylie TX",
+                f"Frisco/Little Elm TX",
             ],
             key="location",
             label_visibility="collapsed",
